@@ -1480,7 +1480,35 @@
                 bookingId: 'MB' + Math.random().toString(36).substr(2, 9).toUpperCase()
             },
             promoCode: null,
-            paymentMethod: 'upi'
+            paymentMethod: 'upi',
+            bookingHistory: [
+                {
+                    id: 'MB' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    movieTitle: 'Avengers: Endgame',
+                    theatre: 'PVR Cinemas, Forum Mall',
+                    date: 'Today, Dec 15',
+                    time: '2:15 PM',
+                    seats: ['A5', 'A6'],
+                    category: 'Premium',
+                    price: 350,
+                    totalAmount: 867.30,
+                    status: 'Confirmed',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    id: 'MB' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    movieTitle: 'Spider-Man: No Way Home',
+                    theatre: 'INOX, Mantri Square Mall',
+                    date: 'Dec 10',
+                    time: '7:30 PM',
+                    seats: ['D8', 'D9'],
+                    category: 'Executive',
+                    price: 270,
+                    totalAmount: 540.00,
+                    status: 'Completed',
+                    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+                }
+            ]
         };
 
         // Movie poster templates
@@ -2659,6 +2687,9 @@
         }
 
         function updateSuccessPage() {
+            // Add current booking to history
+            addToBookingHistory();
+            
             // Update booking ID
             const bookingIdElements = document.querySelectorAll('.booking-id');
             bookingIdElements.forEach(el => {
@@ -2760,6 +2791,251 @@
             showNotification('Event added to calendar!', 'success');
         }
 
+        // Repeat booking functionality
+        function repeatBooking(bookingData) {
+            // Pre-fill booking data from previous booking
+            appState.selectedMovie = bookingData.movieTitle;
+            appState.bookingData.movieTitle = bookingData.movieTitle;
+            
+            // Update movie selection in UI
+            const movieCards = document.querySelectorAll('.movie-card');
+            movieCards.forEach(card => {
+                card.classList.remove('ring-4', 'ring-red-500', 'ring-opacity-50');
+                const cardTitle = card.querySelector('h3').textContent;
+                if (cardTitle === bookingData.movieTitle) {
+                    card.classList.add('ring-4', 'ring-red-500', 'ring-opacity-50');
+                }
+            });
+            
+            // Update movie details page
+            updateMovieDetailsPage(bookingData.movieTitle);
+            
+            // Show notification and navigate
+            showNotification(`Repeating booking for ${bookingData.movieTitle}`, 'success');
+            
+            // Navigate to movie details first, then theatres
+            setTimeout(() => {
+                scrollToSection('movie-details');
+                setTimeout(() => {
+                    scrollToSection('theatres');
+                    
+                    // Highlight the same theatre if available
+                    setTimeout(() => {
+                        const theatreCards = document.querySelectorAll('.theatre-card');
+                        theatreCards.forEach(card => {
+                            const theatreName = card.querySelector('h3').textContent;
+                            if (bookingData.theatre.includes(theatreName)) {
+                                card.classList.add('ring-4', 'ring-blue-500', 'ring-opacity-50');
+                                animateElement(card, 'pulse');
+                                
+                                // Show helpful message
+                                setTimeout(() => {
+                                    showNotification(`Found your previous theatre: ${theatreName}`, 'info');
+                                }, 1000);
+                            }
+                        });
+                    }, 500);
+                }, 1500);
+            }, 1000);
+        }
+
+        // Add booking to history
+        function addToBookingHistory(bookingData) {
+            const newBooking = {
+                id: appState.bookingData.bookingId,
+                movieTitle: appState.bookingData.movieTitle,
+                theatre: appState.bookingData.theatre,
+                date: appState.selectedDate || 'Today',
+                time: appState.selectedShowtime || '2:15 PM',
+                seats: appState.selectedSeats.map(seat => seat.id),
+                category: appState.selectedCategory || 'Premium',
+                price: appState.selectedPrice || 350,
+                totalAmount: appState.bookingData.totalAmount,
+                status: 'Confirmed',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Add to beginning of history
+            appState.bookingHistory.unshift(newBooking);
+            
+            // Keep only last 10 bookings
+            if (appState.bookingHistory.length > 10) {
+                appState.bookingHistory = appState.bookingHistory.slice(0, 10);
+            }
+            
+            // Update profile section with new booking
+            updateProfileBookings();
+        }
+
+        // Update profile bookings display
+        function updateProfileBookings() {
+            const bookingsContainer = document.querySelector('#profile .space-y-6');
+            if (!bookingsContainer) return;
+            
+            bookingsContainer.innerHTML = appState.bookingHistory.slice(0, 3).map(booking => {
+                const statusColor = booking.status === 'Confirmed' ? 'green' : 'gray';
+                const statusText = booking.status === 'Confirmed' ? 'Confirmed' : 'Completed';
+                
+                return `
+                    <div class="bg-gray-50 rounded-3xl p-8">
+                        <div class="flex justify-between items-start mb-6">
+                            <h4 class="text-xl font-bold">${booking.movieTitle}</h4>
+                            <span class="bg-${statusColor}-100 text-${statusColor}-700 px-4 py-2 rounded-full text-sm font-bold">${statusText}</span>
+                        </div>
+                        <div class="text-gray-600 mb-6 space-y-2">
+                            <div class="text-lg">${booking.theatre} • ${booking.date}, ${booking.time}</div>
+                            <div>Seats: ${booking.seats.join(', ')} • ₹${booking.totalAmount}</div>
+                            <div class="text-sm text-gray-500">Booking ID: ${booking.id}</div>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="repeatBooking({movieTitle: '${booking.movieTitle}', theatre: '${booking.theatre}', category: '${booking.category}', price: ${booking.price}})" 
+                                    class="bg-red-500 text-white px-6 py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors">
+                                Repeat Booking
+                            </button>
+                            <button onclick="viewBookingDetails('${booking.id}')" 
+                                    class="bg-white border-2 border-gray-200 text-gray-700 px-6 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-colors">
+                                View Details
+                            </button>
+                            ${booking.status === 'Completed' ? 
+                                `<button onclick="rateMovie('${booking.movieTitle}')" 
+                                         class="bg-yellow-100 text-yellow-700 px-6 py-3 rounded-2xl font-bold hover:bg-yellow-200 transition-colors">
+                                    Rate Movie
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View booking details
+        function viewBookingDetails(bookingId) {
+            const booking = appState.bookingHistory.find(b => b.id === bookingId);
+            if (!booking) return;
+            
+            // Create modal for booking details
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-3xl font-bold">Booking Details</h2>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 rounded-2xl p-6">
+                            <h3 class="text-xl font-bold mb-4">${booking.movieTitle}</h3>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div><span class="text-gray-600">Booking ID:</span> <span class="font-semibold">${booking.id}</span></div>
+                                <div><span class="text-gray-600">Status:</span> <span class="font-semibold text-green-600">${booking.status}</span></div>
+                                <div><span class="text-gray-600">Theatre:</span> <span class="font-semibold">${booking.theatre}</span></div>
+                                <div><span class="text-gray-600">Date & Time:</span> <span class="font-semibold">${booking.date}, ${booking.time}</span></div>
+                                <div><span class="text-gray-600">Seats:</span> <span class="font-semibold">${booking.seats.join(', ')}</span></div>
+                                <div><span class="text-gray-600">Category:</span> <span class="font-semibold">${booking.category}</span></div>
+                                <div><span class="text-gray-600">Price per ticket:</span> <span class="font-semibold">₹${booking.price}</span></div>
+                                <div><span class="text-gray-600">Total Amount:</span> <span class="font-semibold text-red-500">₹${booking.totalAmount}</span></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button onclick="repeatBooking({movieTitle: '${booking.movieTitle}', theatre: '${booking.theatre}', category: '${booking.category}', price: ${booking.price}}); this.closest('.fixed').remove();" 
+                                    class="flex-1 bg-red-500 text-white py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors">
+                                Repeat Booking
+                            </button>
+                            <button onclick="downloadTicketDetails('${booking.id}')" 
+                                    class="flex-1 bg-blue-500 text-white py-3 rounded-2xl font-bold hover:bg-blue-600 transition-colors">
+                                Download Receipt
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            animateElement(modal.querySelector('.bg-white'), 'fadeIn');
+        }
+
+        // Rate movie functionality
+        function rateMovie(movieTitle) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 max-w-md w-full">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold mb-4">Rate ${movieTitle}</h2>
+                        <p class="text-gray-600">How was your movie experience?</p>
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <div class="flex justify-center gap-2 mb-4" id="star-rating">
+                            ${[1,2,3,4,5].map(i => `
+                                <button onclick="setRating(${i})" class="star-btn text-4xl text-gray-300 hover:text-yellow-500 transition-colors">⭐</button>
+                            `).join('')}
+                        </div>
+                        <p class="text-sm text-gray-500" id="rating-text">Click to rate</p>
+                    </div>
+                    
+                    <textarea placeholder="Write a review (optional)" 
+                              class="w-full p-4 border-2 border-gray-200 rounded-2xl mb-6 resize-none h-24 focus:ring-2 focus:ring-red-500 focus:border-transparent"></textarea>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-2xl font-bold hover:bg-gray-300 transition-colors">
+                            Cancel
+                        </button>
+                        <button onclick="submitRating('${movieTitle}'); this.closest('.fixed').remove();" 
+                                class="flex-1 bg-red-500 text-white py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors">
+                            Submit Rating
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add rating functionality
+            window.setRating = function(rating) {
+                const stars = modal.querySelectorAll('.star-btn');
+                const ratingText = modal.querySelector('#rating-text');
+                
+                stars.forEach((star, index) => {
+                    if (index < rating) {
+                        star.classList.remove('text-gray-300');
+                        star.classList.add('text-yellow-500');
+                    } else {
+                        star.classList.remove('text-yellow-500');
+                        star.classList.add('text-gray-300');
+                    }
+                });
+                
+                const ratingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                ratingText.textContent = ratingTexts[rating];
+                modal.dataset.rating = rating;
+            };
+            
+            window.submitRating = function(movieTitle) {
+                const rating = modal.dataset.rating || 0;
+                const review = modal.querySelector('textarea').value;
+                
+                if (rating > 0) {
+                    showNotification(`Thank you for rating ${movieTitle}! (${rating}/5 stars)`, 'success');
+                } else {
+                    showNotification('Please select a rating', 'error');
+                    return;
+                }
+            };
+        }
+
+        // Download ticket details
+        function downloadTicketDetails(bookingId) {
+            showNotification('Downloading booking receipt...', 'info');
+            
+            setTimeout(() => {
+                showNotification('Receipt downloaded successfully!', 'success');
+            }, 1500);
+        }
+
         // Intersection Observer for animations
         function setupIntersectionObserver() {
             const sections = document.querySelectorAll('section[id]');
@@ -2807,6 +3083,9 @@
             
             // Initialize animations
             initializeAnimations();
+            
+            // Initialize profile bookings
+            updateProfileBookings();
             
             showNotification('Welcome to MovieBook! 🎬', 'info');
         });
@@ -2965,5 +3244,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b6380a155d7f2e',t:'MTc1NzI0ODI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b6eea772d97f2e',t:'MTc1NzI1NTcyMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
