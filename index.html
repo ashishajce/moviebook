@@ -1,0 +1,2969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieBook - Complete Movie Booking Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .seat {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .seat:hover {
+            transform: scale(1.1);
+        }
+        
+        .seat.available {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+        
+        .seat.selected {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .seat.booked {
+            background-color: #6b7280;
+            color: white;
+            cursor: not-allowed;
+        }
+        
+        .qr-pattern {
+            background-image: 
+                linear-gradient(45deg, #000 25%, transparent 25%), 
+                linear-gradient(-45deg, #000 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #000 75%), 
+                linear-gradient(-45deg, transparent 75%, #000 75%);
+            background-size: 12px 12px;
+            background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+        }
+        
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .movie-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .navbar {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .timer-bar {
+            animation: countdown 300s linear forwards;
+        }
+        
+        @keyframes countdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .floating-nav {
+            position: fixed;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+        
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.3);
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-dot.active {
+            background: #ef4444;
+            transform: scale(1.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Floating Navigation -->
+    <div class="floating-nav hidden lg:block">
+        <div class="nav-dot active" onclick="scrollToSection('hero')" title="Home"></div>
+        <div class="nav-dot" onclick="scrollToSection('movies')" title="Movies"></div>
+        <div class="nav-dot" onclick="scrollToSection('movie-details')" title="Movie Details"></div>
+        <div class="nav-dot" onclick="scrollToSection('theatres')" title="Theatres"></div>
+        <div class="nav-dot" onclick="scrollToSection('seats')" title="Seat Selection"></div>
+        <div class="nav-dot" onclick="scrollToSection('cart')" title="Cart"></div>
+        <div class="nav-dot" onclick="scrollToSection('payment')" title="Payment"></div>
+        <div class="nav-dot" onclick="scrollToSection('success')" title="Success"></div>
+        <div class="nav-dot" onclick="scrollToSection('profile')" title="Profile"></div>
+    </div>
+
+    <!-- Fixed Header -->
+    <nav class="navbar fixed top-0 left-0 right-0 z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">🎬</span>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-900">MovieBook</span>
+                </div>
+                
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#hero" class="text-gray-700 hover:text-red-500 font-semibold transition-colors">Home</a>
+                    <a href="#movies" class="text-gray-700 hover:text-red-500 font-semibold transition-colors">Movies</a>
+                    <a href="#theatres" class="text-gray-700 hover:text-red-500 font-semibold transition-colors">Theatres</a>
+                    <a href="#profile" class="text-gray-700 hover:text-red-500 font-semibold transition-colors">Profile</a>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button class="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        </svg>
+                        <span class="font-semibold">Bangalore</span>
+                    </button>
+                    <button class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-semibold transition-colors">
+                        Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <section id="hero" class="section hero-gradient pt-20">
+        <div class="flex-1 flex items-center justify-center">
+            <div class="max-w-7xl mx-auto px-6 py-20">
+                <div class="text-center text-white">
+                    <div class="w-32 h-32 bg-white bg-opacity-20 rounded-3xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
+                        <span class="text-6xl">🎬</span>
+                    </div>
+                    <h1 class="text-6xl md:text-7xl font-bold mb-6">MovieBook</h1>
+                    <p class="text-2xl mb-12 text-white text-opacity-90 max-w-2xl mx-auto">
+                        Your favorite movies, just a click away. Book tickets for the latest blockbusters and enjoy the ultimate cinema experience.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+                        <button onclick="scrollToSection('movies')" class="bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-colors shadow-xl">
+                            Explore Movies
+                        </button>
+                        <button class="border-2 border-white text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-white hover:text-gray-900 transition-colors">
+                            Watch Trailer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Movies Section -->
+    <section id="movies" class="section bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-16">
+                <h2 class="text-5xl font-bold mb-6 text-gray-900">Now Showing</h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Discover the latest blockbusters and indie gems playing in theaters near you
+                </p>
+            </div>
+            
+            <!-- Filter Tabs -->
+            <div class="flex justify-center mb-12">
+                <div class="bg-gray-100 p-2 rounded-2xl">
+                    <button class="filter-btn bg-red-500 text-white px-6 py-3 rounded-xl font-semibold mr-2">All Movies</button>
+                    <button class="filter-btn text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-white transition-colors">Action</button>
+                    <button class="filter-btn text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-white transition-colors">Comedy</button>
+                    <button class="filter-btn text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-white transition-colors">Drama</button>
+                </div>
+            </div>
+            
+            <!-- Movies Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="movie-card bg-white rounded-3xl overflow-hidden shadow-lg cursor-pointer" onclick="selectMovie(this)" data-movie="Avengers: Endgame">
+                    <div class="h-80 relative overflow-hidden">
+                        <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Avengers Endgame Poster -->
+                            <defs>
+                                <linearGradient id="avengersGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#1a1a2e"/>
+                                    <stop offset="50%" style="stop-color:#16213e"/>
+                                    <stop offset="100%" style="stop-color:#0f3460"/>
+                                </linearGradient>
+                            </defs>
+                            <rect width="300" height="400" fill="url(#avengersGrad)"/>
+                            
+                            <!-- A Logo -->
+                            <circle cx="150" cy="120" r="40" fill="#ffd700" stroke="#fff" stroke-width="3"/>
+                            <polygon points="130,140 150,100 170,140 160,140 150,120 140,140" fill="#1a1a2e"/>
+                            <rect x="140" y="125" width="20" height="4" fill="#1a1a2e"/>
+                            
+                            <!-- Title -->
+                            <text x="150" y="200" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="24" font-weight="bold">AVENGERS</text>
+                            <text x="150" y="230" text-anchor="middle" fill="#fff" font-family="Arial" font-size="18">ENDGAME</text>
+                            
+                            <!-- Character silhouettes -->
+                            <ellipse cx="80" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                            <ellipse cx="120" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                            <ellipse cx="150" cy="285" rx="15" ry="50" fill="#444" opacity="0.7"/>
+                            <ellipse cx="180" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                            <ellipse cx="220" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                            
+                            <!-- Infinity stones effect -->
+                            <circle cx="50" cy="50" r="3" fill="#ff6b6b" opacity="0.8"/>
+                            <circle cx="250" cy="80" r="3" fill="#4ecdc4" opacity="0.8"/>
+                            <circle cx="70" cy="350" r="3" fill="#45b7d1" opacity="0.8"/>
+                            <circle cx="230" cy="320" r="3" fill="#f9ca24" opacity="0.8"/>
+                            <circle cx="150" cy="350" r="3" fill="#6c5ce7" opacity="0.8"/>
+                            <circle cx="200" cy="60" r="3" fill="#fd79a8" opacity="0.8"/>
+                        </svg>
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            ⭐ 8.4
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">Avengers: Endgame</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                            <span>Action • Adventure</span>
+                            <span>181 min</span>
+                            <span>U/A</span>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">2D</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">3D</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">IMAX</span>
+                        </div>
+                        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl font-bold transition-colors">
+                            Book Now
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="movie-card bg-white rounded-3xl overflow-hidden shadow-lg cursor-pointer" onclick="selectMovie(this)" data-movie="Spider-Man: No Way Home">
+                    <div class="h-80 relative overflow-hidden">
+                        <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Spider-Man No Way Home Poster -->
+                            <defs>
+                                <radialGradient id="spiderGrad" cx="50%" cy="30%" r="70%">
+                                    <stop offset="0%" style="stop-color:#ff4757"/>
+                                    <stop offset="50%" style="stop-color:#c44569"/>
+                                    <stop offset="100%" style="stop-color:#2f1b69"/>
+                                </radialGradient>
+                            </defs>
+                            <rect width="300" height="400" fill="url(#spiderGrad)"/>
+                            
+                            <!-- Spider web pattern -->
+                            <g stroke="#fff" stroke-width="1" opacity="0.3" fill="none">
+                                <circle cx="150" cy="200" r="50"/>
+                                <circle cx="150" cy="200" r="80"/>
+                                <circle cx="150" cy="200" r="110"/>
+                                <line x1="150" y1="90" x2="150" y2="310"/>
+                                <line x1="40" y1="200" x2="260" y2="200"/>
+                                <line x1="85" y1="135" x2="215" y2="265"/>
+                                <line x1="215" y1="135" x2="85" y2="265"/>
+                            </g>
+                            
+                            <!-- Spider symbol -->
+                            <g fill="#fff">
+                                <ellipse cx="150" cy="180" rx="25" ry="15"/>
+                                <ellipse cx="150" cy="200" rx="20" ry="25"/>
+                                <polygon points="125,170 135,160 145,170 150,165 155,170 165,160 175,170 165,175 155,185 150,180 145,185 135,175"/>
+                                <polygon points="125,210 135,220 145,210 150,215 155,210 165,220 175,210 165,205 155,195 150,200 145,195 135,205"/>
+                            </g>
+                            
+                            <!-- Title -->
+                            <text x="150" y="280" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="16" font-weight="bold">SPIDER-MAN</text>
+                            <text x="150" y="300" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="14">NO WAY HOME</text>
+                            
+                            <!-- Multiple Spider-Man silhouettes -->
+                            <g opacity="0.6">
+                                <ellipse cx="100" cy="320" rx="12" ry="30" fill="#ff4757"/>
+                                <ellipse cx="150" cy="315" rx="12" ry="35" fill="#2ed573"/>
+                                <ellipse cx="200" cy="320" rx="12" ry="30" fill="#1e90ff"/>
+                            </g>
+                        </svg>
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            ⭐ 8.7
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">Spider-Man: No Way Home</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                            <span>Action • Adventure</span>
+                            <span>148 min</span>
+                            <span>U/A</span>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">2D</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">IMAX</span>
+                        </div>
+                        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl font-bold transition-colors">
+                            Book Now
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="movie-card bg-white rounded-3xl overflow-hidden shadow-lg cursor-pointer" onclick="selectMovie(this)" data-movie="The Batman">
+                    <div class="h-80 relative overflow-hidden">
+                        <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- The Batman Poster -->
+                            <defs>
+                                <linearGradient id="batmanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#000"/>
+                                    <stop offset="50%" style="stop-color:#1a1a1a"/>
+                                    <stop offset="100%" style="stop-color:#8b0000"/>
+                                </linearGradient>
+                            </defs>
+                            <rect width="300" height="400" fill="url(#batmanGrad)"/>
+                            
+                            <!-- Gotham skyline silhouette -->
+                            <polygon points="0,350 50,320 80,340 120,310 150,330 180,300 220,320 250,310 300,330 300,400 0,400" fill="#000" opacity="0.8"/>
+                            
+                            <!-- Batman symbol -->
+                            <g fill="#ffd700">
+                                <ellipse cx="150" cy="150" rx="60" ry="30"/>
+                                <ellipse cx="120" cy="140" rx="25" ry="20"/>
+                                <ellipse cx="180" cy="140" rx="25" ry="20"/>
+                                <polygon points="150,120 130,100 170,100"/>
+                                <ellipse cx="150" cy="170" rx="15" ry="25"/>
+                            </g>
+                            
+                            <!-- Rain effect -->
+                            <g stroke="#4a90e2" stroke-width="1" opacity="0.4">
+                                <line x1="50" y1="0" x2="45" y2="50"/>
+                                <line x1="100" y1="0" x2="95" y2="60"/>
+                                <line x1="150" y1="0" x2="145" y2="45"/>
+                                <line x1="200" y1="0" x2="195" y2="55"/>
+                                <line x1="250" y1="0" x2="245" y2="40"/>
+                                <line x1="75" y1="100" x2="70" y2="150"/>
+                                <line x1="125" y1="80" x2="120" y2="130"/>
+                                <line x1="175" y1="90" x2="170" y2="140"/>
+                                <line x1="225" y1="70" x2="220" y2="120"/>
+                            </g>
+                            
+                            <!-- Title -->
+                            <text x="150" y="250" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="28" font-weight="bold">THE</text>
+                            <text x="150" y="280" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="32" font-weight="bold">BATMAN</text>
+                            
+                            <!-- Batman cape silhouette -->
+                            <path d="M 150 320 Q 100 340 80 380 Q 150 360 150 320 Q 200 340 220 380 Q 150 360 150 320" fill="#000" opacity="0.7"/>
+                        </svg>
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            ⭐ 7.9
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">The Batman</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                            <span>Action • Crime</span>
+                            <span>176 min</span>
+                            <span>U/A</span>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">2D</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">IMAX</span>
+                        </div>
+                        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl font-bold transition-colors">
+                            Book Now
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="movie-card bg-white rounded-3xl overflow-hidden shadow-lg cursor-pointer" onclick="selectMovie(this)" data-movie="Top Gun: Maverick">
+                    <div class="h-80 relative overflow-hidden">
+                        <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Top Gun Maverick Poster -->
+                            <defs>
+                                <linearGradient id="topgunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#ff6b35"/>
+                                    <stop offset="50%" style="stop-color:#f7931e"/>
+                                    <stop offset="100%" style="stop-color:#1e3c72"/>
+                                </linearGradient>
+                            </defs>
+                            <rect width="300" height="400" fill="url(#topgunGrad)"/>
+                            
+                            <!-- Fighter jet silhouette -->
+                            <g fill="#000" opacity="0.6">
+                                <polygon points="150,80 140,90 130,85 120,90 110,85 100,95 120,100 140,95 150,100 160,95 180,100 200,95 190,90 180,85 170,90 160,85"/>
+                                <ellipse cx="150" cy="95" rx="50" ry="8"/>
+                                <polygon points="150,100 145,120 155,120"/>
+                            </g>
+                            
+                            <!-- Vapor trails -->
+                            <g stroke="#fff" stroke-width="2" opacity="0.7" fill="none">
+                                <path d="M 100 95 Q 80 120 60 150"/>
+                                <path d="M 200 95 Q 220 120 240 150"/>
+                            </g>
+                            
+                            <!-- Aviator sunglasses reflection -->
+                            <g fill="#ffd700" opacity="0.8">
+                                <ellipse cx="130" cy="180" rx="25" ry="15"/>
+                                <ellipse cx="170" cy="180" rx="25" ry="15"/>
+                                <rect x="145" y="175" width="10" height="3" fill="#333"/>
+                            </g>
+                            
+                            <!-- Title -->
+                            <text x="150" y="250" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="24" font-weight="bold">TOP GUN</text>
+                            <text x="150" y="280" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="20" font-weight="bold">MAVERICK</text>
+                            
+                            <!-- Military insignia -->
+                            <g fill="#ffd700" opacity="0.9">
+                                <polygon points="150,320 140,310 160,310"/>
+                                <rect x="145" y="315" width="10" height="15"/>
+                                <polygon points="150,335 145,340 155,340"/>
+                            </g>
+                            
+                            <!-- Aircraft carrier deck -->
+                            <rect x="0" y="360" width="300" height="40" fill="#333" opacity="0.8"/>
+                            <g stroke="#ffd700" stroke-width="1" opacity="0.6">
+                                <line x1="0" y1="370" x2="300" y2="370"/>
+                                <line x1="0" y1="380" x2="300" y2="380"/>
+                                <line x1="0" y1="390" x2="300" y2="390"/>
+                            </g>
+                        </svg>
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            ⭐ 8.2
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">Top Gun: Maverick</h3>
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                            <span>Action • Drama</span>
+                            <span>130 min</span>
+                            <span>U/A</span>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">2D</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-semibold">IMAX</span>
+                        </div>
+                        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl font-bold transition-colors">
+                            Book Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Movie Details Section -->
+    <section id="movie-details" class="section bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <!-- Hero Section -->
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl overflow-hidden mb-12" id="movie-hero-section">
+                <div class="flex flex-col lg:flex-row">
+                    <div class="lg:w-1/3 h-96 lg:h-auto relative overflow-hidden" id="movie-poster-container">
+                        <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg" id="movie-poster-svg">
+                            <!-- Default Avengers Endgame Poster -->
+                            <defs>
+                                <linearGradient id="movieDetailsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#1a1a2e"/>
+                                    <stop offset="50%" style="stop-color:#16213e"/>
+                                    <stop offset="100%" style="stop-color:#0f3460"/>
+                                </linearGradient>
+                            </defs>
+                            <rect width="300" height="400" fill="url(#movieDetailsGrad)"/>
+                            
+                            <!-- A Logo -->
+                            <circle cx="150" cy="120" r="40" fill="#ffd700" stroke="#fff" stroke-width="3"/>
+                            <polygon points="130,140 150,100 170,140 160,140 150,120 140,140" fill="#1a1a2e"/>
+                            <rect x="140" y="125" width="20" height="4" fill="#1a1a2e"/>
+                            
+                            <!-- Title -->
+                            <text x="150" y="200" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="24" font-weight="bold">AVENGERS</text>
+                            <text x="150" y="230" text-anchor="middle" fill="#fff" font-family="Arial" font-size="18">ENDGAME</text>
+                            
+                            <!-- Character silhouettes -->
+                            <ellipse cx="80" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                            <ellipse cx="120" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                            <ellipse cx="150" cy="285" rx="15" ry="50" fill="#444" opacity="0.7"/>
+                            <ellipse cx="180" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                            <ellipse cx="220" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                            
+                            <!-- Infinity stones effect -->
+                            <circle cx="50" cy="50" r="3" fill="#ff6b6b" opacity="0.8"/>
+                            <circle cx="250" cy="80" r="3" fill="#4ecdc4" opacity="0.8"/>
+                            <circle cx="70" cy="350" r="3" fill="#45b7d1" opacity="0.8"/>
+                            <circle cx="230" cy="320" r="3" fill="#f9ca24" opacity="0.8"/>
+                            <circle cx="150" cy="350" r="3" fill="#6c5ce7" opacity="0.8"/>
+                            <circle cx="200" cy="60" r="3" fill="#fd79a8" opacity="0.8"/>
+                        </svg>
+                    </div>
+                    <div class="lg:w-2/3 p-12 text-white">
+                        <h1 class="text-5xl font-bold mb-6">Avengers: Endgame</h1>
+                        <div class="flex flex-wrap items-center gap-6 mb-8">
+                            <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">⭐ 8.4/10</span>
+                            <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">181 min</span>
+                            <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">Action</span>
+                            <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">U/A</span>
+                        </div>
+                        <p class="text-xl leading-relaxed mb-8 text-white text-opacity-90">
+                            After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers must assemble once more to undo Thanos' actions and restore order to the universe.
+                        </p>
+                        <button onclick="scrollToSection('theatres')" class="bg-white text-gray-900 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-colors">
+                            Book Tickets
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <!-- Synopsis -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-3xl p-8 mb-8">
+                        <h2 class="text-3xl font-bold mb-6">Synopsis</h2>
+                        <p class="text-gray-600 leading-relaxed text-lg">
+                            After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos. With the help of remaining allies, the Avengers must assemble once more in order to undo Thanos' actions and restore order to the universe once and for all, no matter what consequences may be in store.
+                        </p>
+                    </div>
+                    
+                    <!-- Cast -->
+                    <div class="bg-white rounded-3xl p-8">
+                        <h2 class="text-3xl font-bold mb-6">Cast & Crew</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-6" id="cast-container">
+                            <div class="text-center">
+                                <div class="w-24 h-24 rounded-full mb-4 mx-auto overflow-hidden">
+                                    <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Robert Downey Jr. as Tony Stark -->
+                                        <defs>
+                                            <linearGradient id="rdj-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#8B4513"/>
+                                                <stop offset="100%" style="stop-color:#D2691E"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <circle cx="50" cy="50" r="50" fill="url(#rdj-grad)"/>
+                                        <!-- Face -->
+                                        <ellipse cx="50" cy="45" rx="20" ry="25" fill="#FDBCB4"/>
+                                        <!-- Hair -->
+                                        <path d="M 30 30 Q 50 20 70 30 Q 65 35 50 35 Q 35 35 30 30" fill="#2F1B14"/>
+                                        <!-- Eyes -->
+                                        <circle cx="43" cy="40" r="2" fill="#000"/>
+                                        <circle cx="57" cy="40" r="2" fill="#000"/>
+                                        <!-- Goatee -->
+                                        <ellipse cx="50" cy="55" rx="3" ry="5" fill="#2F1B14"/>
+                                        <!-- Arc Reactor glow -->
+                                        <circle cx="50" cy="80" r="8" fill="#00BFFF" opacity="0.7"/>
+                                        <circle cx="50" cy="80" r="4" fill="#87CEEB"/>
+                                    </svg>
+                                </div>
+                                <p class="font-bold">Robert Downey Jr.</p>
+                                <p class="text-sm text-gray-600">Tony Stark</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-24 h-24 rounded-full mb-4 mx-auto overflow-hidden">
+                                    <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Chris Evans as Captain America -->
+                                        <defs>
+                                            <linearGradient id="ce-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#1E3A8A"/>
+                                                <stop offset="100%" style="stop-color:#3B82F6"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <circle cx="50" cy="50" r="50" fill="url(#ce-grad)"/>
+                                        <!-- Face -->
+                                        <ellipse cx="50" cy="45" rx="18" ry="23" fill="#FDBCB4"/>
+                                        <!-- Hair -->
+                                        <path d="M 32 32 Q 50 22 68 32 Q 65 38 50 38 Q 35 38 32 32" fill="#D4A574"/>
+                                        <!-- Eyes -->
+                                        <circle cx="44" cy="41" r="2" fill="#4169E1"/>
+                                        <circle cx="56" cy="41" r="2" fill="#4169E1"/>
+                                        <!-- Shield emblem -->
+                                        <circle cx="50" cy="80" r="10" fill="#DC143C"/>
+                                        <circle cx="50" cy="80" r="7" fill="#FFF"/>
+                                        <circle cx="50" cy="80" r="4" fill="#DC143C"/>
+                                        <polygon points="50,76 52,80 50,84 48,80" fill="#FFF"/>
+                                    </svg>
+                                </div>
+                                <p class="font-bold">Chris Evans</p>
+                                <p class="text-sm text-gray-600">Steve Rogers</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-24 h-24 rounded-full mb-4 mx-auto overflow-hidden">
+                                    <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Scarlett Johansson as Black Widow -->
+                                        <defs>
+                                            <linearGradient id="sj-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#000"/>
+                                                <stop offset="100%" style="stop-color:#8B0000"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <circle cx="50" cy="50" r="50" fill="url(#sj-grad)"/>
+                                        <!-- Face -->
+                                        <ellipse cx="50" cy="45" rx="17" ry="22" fill="#FDBCB4"/>
+                                        <!-- Hair -->
+                                        <path d="M 33 35 Q 50 25 67 35 Q 65 45 50 45 Q 35 45 33 35" fill="#DC143C"/>
+                                        <!-- Eyes -->
+                                        <circle cx="44" cy="42" r="2" fill="#228B22"/>
+                                        <circle cx="56" cy="42" r="2" fill="#228B22"/>
+                                        <!-- Black Widow symbol -->
+                                        <g fill="#DC143C" opacity="0.8">
+                                            <ellipse cx="50" cy="80" rx="8" ry="4"/>
+                                            <circle cx="45" cy="78" r="2"/>
+                                            <circle cx="55" cy="78" r="2"/>
+                                            <path d="M 42 82 Q 50 88 58 82"/>
+                                        </g>
+                                    </svg>
+                                </div>
+                                <p class="font-bold">Scarlett Johansson</p>
+                                <p class="text-sm text-gray-600">Natasha Romanoff</p>
+                            </div>
+                            <div class="text-center">
+                                <div class="w-24 h-24 rounded-full mb-4 mx-auto overflow-hidden">
+                                    <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Mark Ruffalo as Hulk -->
+                                        <defs>
+                                            <linearGradient id="mr-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#228B22"/>
+                                                <stop offset="100%" style="stop-color:#32CD32"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <circle cx="50" cy="50" r="50" fill="url(#mr-grad)"/>
+                                        <!-- Face -->
+                                        <ellipse cx="50" cy="45" rx="19" ry="24" fill="#FDBCB4"/>
+                                        <!-- Hair -->
+                                        <path d="M 31 33 Q 50 23 69 33 Q 66 40 50 40 Q 34 40 31 33" fill="#2F4F2F"/>
+                                        <!-- Eyes -->
+                                        <circle cx="43" cy="42" r="2" fill="#8B4513"/>
+                                        <circle cx="57" cy="42" r="2" fill="#8B4513"/>
+                                        <!-- Hulk fist -->
+                                        <g fill="#228B22" opacity="0.9">
+                                            <ellipse cx="50" cy="80" rx="10" ry="8"/>
+                                            <rect x="45" y="75" width="10" height="6" rx="2"/>
+                                            <circle cx="42" cy="78" r="2"/>
+                                            <circle cx="58" cy="78" r="2"/>
+                                        </g>
+                                    </svg>
+                                </div>
+                                <p class="font-bold">Mark Ruffalo</p>
+                                <p class="text-sm text-gray-600">Bruce Banner</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movie Info -->
+                <div>
+                    <div class="bg-white rounded-3xl p-8 mb-8">
+                        <h3 class="text-2xl font-bold mb-6">Movie Info</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Director</span>
+                                <span class="font-semibold">Anthony Russo, Joe Russo</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Genre</span>
+                                <span class="font-semibold">Action, Adventure</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Duration</span>
+                                <span class="font-semibold">181 minutes</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Language</span>
+                                <span class="font-semibold">English</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Release Date</span>
+                                <span class="font-semibold">April 26, 2019</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviews -->
+                    <div class="bg-white rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Reviews</h3>
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-red-500 pl-4">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="font-bold">John D.</span>
+                                    <span class="text-yellow-500">⭐⭐⭐⭐⭐</span>
+                                </div>
+                                <p class="text-gray-600 text-sm">"Amazing conclusion to the saga!"</p>
+                            </div>
+                            <div class="border-l-4 border-red-500 pl-4">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="font-bold">Sarah M.</span>
+                                    <span class="text-yellow-500">⭐⭐⭐⭐⭐</span>
+                                </div>
+                                <p class="text-gray-600 text-sm">"Epic finale with great emotional depth."</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Theatre Selection Section -->
+    <section id="theatres" class="section bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-bold mb-6 text-gray-900">Select Theatre & Show</h2>
+                <p class="text-xl text-gray-600">Choose your preferred cinema and showtime</p>
+            </div>
+            
+            <!-- Date Selection -->
+            <div class="flex justify-center mb-12">
+                <div class="flex gap-4 bg-gray-100 p-2 rounded-2xl">
+                    <button class="date-btn bg-red-500 text-white px-6 py-4 rounded-xl font-semibold">
+                        <div class="text-center">
+                            <div class="text-lg font-bold">Today</div>
+                            <div class="text-sm opacity-90">Dec 15</div>
+                        </div>
+                    </button>
+                    <button class="date-btn text-gray-700 px-6 py-4 rounded-xl font-semibold hover:bg-white transition-colors">
+                        <div class="text-center">
+                            <div class="text-lg font-bold">Tomorrow</div>
+                            <div class="text-sm opacity-70">Dec 16</div>
+                        </div>
+                    </button>
+                    <button class="date-btn text-gray-700 px-6 py-4 rounded-xl font-semibold hover:bg-white transition-colors">
+                        <div class="text-center">
+                            <div class="text-lg font-bold">Sunday</div>
+                            <div class="text-sm opacity-70">Dec 17</div>
+                        </div>
+                    </button>
+                    <button class="date-btn text-gray-700 px-6 py-4 rounded-xl font-semibold hover:bg-white transition-colors">
+                        <div class="text-center">
+                            <div class="text-lg font-bold">Monday</div>
+                            <div class="text-sm opacity-70">Dec 18</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Theatre List -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="theatre-card bg-gray-50 rounded-3xl p-8">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold mb-2">PVR Cinemas</h3>
+                        <p class="text-gray-600 mb-4">Forum Mall, Koramangala</p>
+                        <div class="flex items-center gap-6">
+                            <span class="text-green-600 font-bold text-lg">⭐ 4.2</span>
+                            <span class="text-gray-600">2.5 km away</span>
+                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">Parking Available</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div class="price-section">
+                            <div class="flex items-center justify-between mb-6">
+                                <span class="price text-xl font-bold text-purple-600">Premium - ₹350</span>
+                                <span class="text-sm text-gray-500 bg-purple-100 px-3 py-1 rounded-full">Recliner Seats</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">10:30 AM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-red-500 text-white px-6 py-4 rounded-2xl font-bold hover:bg-red-600 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">2:15 PM</div>
+                                        <div class="status text-xs opacity-90">Filling Fast</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">6:45 PM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="price-section">
+                            <div class="flex items-center justify-between mb-6">
+                                <span class="price text-xl font-bold text-green-600">Normal - ₹180</span>
+                                <span class="text-sm text-gray-500 bg-green-100 px-3 py-1 rounded-full">Regular Seats</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">12:00 PM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">4:15 PM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">8:45 PM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="theatre-card bg-gray-50 rounded-3xl p-8">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold mb-2">INOX</h3>
+                        <p class="text-gray-600 mb-4">Mantri Square Mall</p>
+                        <div class="flex items-center gap-6">
+                            <span class="text-green-600 font-bold text-lg">⭐ 4.0</span>
+                            <span class="text-gray-600">4.2 km away</span>
+                            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">Food Court</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div class="price-section">
+                            <div class="flex items-center justify-between mb-6">
+                                <span class="price text-xl font-bold text-blue-600">Executive - ₹220</span>
+                                <span class="text-sm text-gray-500 bg-blue-100 px-3 py-1 rounded-full">Premium Seats</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">11:15 AM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-green-100 text-green-700 px-6 py-4 rounded-2xl font-bold hover:bg-green-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">3:00 PM</div>
+                                        <div class="status text-xs opacity-70">Available</div>
+                                    </div>
+                                </button>
+                                <button class="showtime-btn bg-yellow-100 text-yellow-700 px-6 py-4 rounded-2xl font-bold hover:bg-yellow-200 transition-colors">
+                                    <div class="text-center">
+                                        <div class="time text-lg">8:15 PM</div>
+                                        <div class="status text-xs opacity-70">Few Left</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Seat Selection Section -->
+    <section id="seats" class="section bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-bold mb-6 text-gray-900">Select Your Seats</h2>
+                <p class="text-xl text-gray-600">PVR Cinemas • Screen 3 • Today, 2:15 PM</p>
+            </div>
+            
+            <!-- Timer -->
+            <div class="max-w-2xl mx-auto bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 mb-12">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xl font-bold text-yellow-800">Seats held for</span>
+                    <span id="timer" class="text-3xl font-bold text-yellow-800">4:32</span>
+                </div>
+                <div class="w-full bg-yellow-200 rounded-full h-4">
+                    <div class="timer-bar bg-yellow-500 h-4 rounded-full"></div>
+                </div>
+            </div>
+            
+            <!-- Screen -->
+            <div class="text-center mb-16">
+                <div class="max-w-4xl mx-auto">
+                    <div class="w-full h-4 bg-gray-300 rounded-full mb-6" style="background: linear-gradient(90deg, transparent 0%, #d1d5db 20%, #d1d5db 80%, transparent 100%);"></div>
+                    <span class="text-lg font-bold text-gray-500">SCREEN</span>
+                </div>
+            </div>
+            
+            <!-- Seat Map -->
+            <div class="max-w-5xl mx-auto">
+                <div class="space-y-12">
+                    <!-- Premium Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-8">
+                            <span class="text-2xl font-bold text-purple-600">Premium - ₹350</span>
+                            <span class="text-gray-500 bg-purple-100 px-4 py-2 rounded-full font-semibold">Row A-C</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="seat-row flex justify-center gap-3 items-center">
+                                <span class="row-label text-lg font-bold text-gray-500 w-8">A</span>
+                                <div class="seat available" onclick="toggleSeat(this)">1</div>
+                                <div class="seat available" onclick="toggleSeat(this)">2</div>
+                                <div class="seat booked">3</div>
+                                <div class="seat booked">4</div>
+                                <div class="w-8"></div>
+                                <div class="seat selected" onclick="toggleSeat(this)">5</div>
+                                <div class="seat selected" onclick="toggleSeat(this)">6</div>
+                                <div class="seat available" onclick="toggleSeat(this)">7</div>
+                                <div class="seat available" onclick="toggleSeat(this)">8</div>
+                                <div class="seat available" onclick="toggleSeat(this)">9</div>
+                                <div class="seat available" onclick="toggleSeat(this)">10</div>
+                                <span class="text-lg font-bold text-gray-500 w-8 text-right">A</span>
+                            </div>
+                            <div class="seat-row flex justify-center gap-3 items-center">
+                                <span class="row-label text-lg font-bold text-gray-500 w-8">B</span>
+                                <div class="seat available" onclick="toggleSeat(this)">1</div>
+                                <div class="seat available" onclick="toggleSeat(this)">2</div>
+                                <div class="seat available" onclick="toggleSeat(this)">3</div>
+                                <div class="seat available" onclick="toggleSeat(this)">4</div>
+                                <div class="w-8"></div>
+                                <div class="seat available" onclick="toggleSeat(this)">5</div>
+                                <div class="seat available" onclick="toggleSeat(this)">6</div>
+                                <div class="seat available" onclick="toggleSeat(this)">7</div>
+                                <div class="seat available" onclick="toggleSeat(this)">8</div>
+                                <div class="seat available" onclick="toggleSeat(this)">9</div>
+                                <div class="seat available" onclick="toggleSeat(this)">10</div>
+                                <span class="text-lg font-bold text-gray-500 w-8 text-right">B</span>
+                            </div>
+                            <div class="seat-row flex justify-center gap-3 items-center">
+                                <span class="row-label text-lg font-bold text-gray-500 w-8">C</span>
+                                <div class="seat available" onclick="toggleSeat(this)">1</div>
+                                <div class="seat available" onclick="toggleSeat(this)">2</div>
+                                <div class="seat available" onclick="toggleSeat(this)">3</div>
+                                <div class="seat available" onclick="toggleSeat(this)">4</div>
+                                <div class="w-8"></div>
+                                <div class="seat available" onclick="toggleSeat(this)">5</div>
+                                <div class="seat available" onclick="toggleSeat(this)">6</div>
+                                <div class="seat available" onclick="toggleSeat(this)">7</div>
+                                <div class="seat available" onclick="toggleSeat(this)">8</div>
+                                <div class="seat available" onclick="toggleSeat(this)">9</div>
+                                <div class="seat available" onclick="toggleSeat(this)">10</div>
+                                <span class="text-lg font-bold text-gray-500 w-8 text-right">C</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Normal Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-8">
+                            <span class="text-2xl font-bold text-green-600">Normal - ₹180</span>
+                            <span class="text-gray-500 bg-green-100 px-4 py-2 rounded-full font-semibold">Row D-H</span>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="seat-row flex justify-center gap-3 items-center">
+                                <span class="row-label text-lg font-bold text-gray-500 w-8">D</span>
+                                <div class="seat available" onclick="toggleSeat(this)">1</div>
+                                <div class="seat available" onclick="toggleSeat(this)">2</div>
+                                <div class="seat available" onclick="toggleSeat(this)">3</div>
+                                <div class="seat available" onclick="toggleSeat(this)">4</div>
+                                <div class="w-8"></div>
+                                <div class="seat available" onclick="toggleSeat(this)">5</div>
+                                <div class="seat available" onclick="toggleSeat(this)">6</div>
+                                <div class="seat available" onclick="toggleSeat(this)">7</div>
+                                <div class="seat available" onclick="toggleSeat(this)">8</div>
+                                <div class="seat available" onclick="toggleSeat(this)">9</div>
+                                <div class="seat available" onclick="toggleSeat(this)">10</div>
+                                <span class="text-lg font-bold text-gray-500 w-8 text-right">D</span>
+                            </div>
+                            <div class="seat-row flex justify-center gap-3 items-center">
+                                <span class="row-label text-lg font-bold text-gray-500 w-8">E</span>
+                                <div class="seat available" onclick="toggleSeat(this)">1</div>
+                                <div class="seat available" onclick="toggleSeat(this)">2</div>
+                                <div class="seat booked">3</div>
+                                <div class="seat booked">4</div>
+                                <div class="w-8"></div>
+                                <div class="seat booked">5</div>
+                                <div class="seat booked">6</div>
+                                <div class="seat available" onclick="toggleSeat(this)">7</div>
+                                <div class="seat available" onclick="toggleSeat(this)">8</div>
+                                <div class="seat available" onclick="toggleSeat(this)">9</div>
+                                <div class="seat available" onclick="toggleSeat(this)">10</div>
+                                <span class="text-lg font-bold text-gray-500 w-8 text-right">E</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend & Continue -->
+            <div class="max-w-4xl mx-auto mt-16">
+                <div class="flex justify-center items-center gap-12 text-lg mb-12">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                        <span class="font-semibold">Available</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-red-500 rounded-lg"></div>
+                        <span class="font-semibold">Selected</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-gray-400 rounded-lg"></div>
+                        <span class="font-semibold">Booked</span>
+                    </div>
+                </div>
+                
+                <button id="continue-btn" onclick="scrollToSection('cart')" class="w-full bg-red-500 hover:bg-red-600 text-white py-6 rounded-3xl font-bold text-2xl transition-colors">
+                    Continue (2 seats - ₹700)
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Cart Section -->
+    <section id="cart" class="section bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-bold mb-6 text-gray-900">Booking Summary</h2>
+                <p class="text-xl text-gray-600">Review your booking details before payment</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Booking Details -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Movie Details -->
+                    <div class="bg-gray-50 rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Movie Details</h3>
+                        <div class="flex gap-6">
+                            <div class="w-24 h-36 rounded-2xl overflow-hidden" id="cart-movie-poster">
+                                <svg class="w-full h-full" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg">
+                                    <!-- Default Avengers poster for cart -->
+                                    <defs>
+                                        <linearGradient id="cartPosterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#1a1a2e"/>
+                                            <stop offset="50%" style="stop-color:#16213e"/>
+                                            <stop offset="100%" style="stop-color:#0f3460"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect width="300" height="400" fill="url(#cartPosterGrad)"/>
+                                    
+                                    <!-- A Logo -->
+                                    <circle cx="150" cy="120" r="40" fill="#ffd700" stroke="#fff" stroke-width="3"/>
+                                    <polygon points="130,140 150,100 170,140 160,140 150,120 140,140" fill="#1a1a2e"/>
+                                    <rect x="140" y="125" width="20" height="4" fill="#1a1a2e"/>
+                                    
+                                    <!-- Title -->
+                                    <text x="150" y="200" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="24" font-weight="bold">AVENGERS</text>
+                                    <text x="150" y="230" text-anchor="middle" fill="#fff" font-family="Arial" font-size="18">ENDGAME</text>
+                                    
+                                    <!-- Character silhouettes -->
+                                    <ellipse cx="80" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                                    <ellipse cx="120" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                                    <ellipse cx="150" cy="285" rx="15" ry="50" fill="#444" opacity="0.7"/>
+                                    <ellipse cx="180" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                                    <ellipse cx="220" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                                    
+                                    <!-- Infinity stones effect -->
+                                    <circle cx="50" cy="50" r="3" fill="#ff6b6b" opacity="0.8"/>
+                                    <circle cx="250" cy="80" r="3" fill="#4ecdc4" opacity="0.8"/>
+                                    <circle cx="70" cy="350" r="3" fill="#45b7d1" opacity="0.8"/>
+                                    <circle cx="230" cy="320" r="3" fill="#f9ca24" opacity="0.8"/>
+                                    <circle cx="150" cy="350" r="3" fill="#6c5ce7" opacity="0.8"/>
+                                    <circle cx="200" cy="60" r="3" fill="#fd79a8" opacity="0.8"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-xl font-bold mb-4">Avengers: Endgame</h4>
+                                <div class="space-y-3 text-gray-600">
+                                    <div class="flex justify-between">
+                                        <span>Theatre</span>
+                                        <span class="font-semibold text-gray-900">PVR Cinemas, Forum Mall</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Date & Time</span>
+                                        <span class="font-semibold text-gray-900">Today, Dec 15 • 2:15 PM</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Seats</span>
+                                        <span class="selected-seats font-semibold text-gray-900">A5, A6 (Premium)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Screen</span>
+                                        <span class="font-semibold text-gray-900">Screen 3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Promo Code -->
+                    <div class="bg-gray-50 rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Promo Code</h3>
+                        <div class="flex gap-4">
+                            <input type="text" placeholder="Enter promo code" class="promo-input flex-1 px-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg">
+                            <button class="promo-apply-btn bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-colors">Apply</button>
+                        </div>
+                        <div class="mt-4 flex gap-3">
+                            <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">SAVE20 - 20% off</span>
+                            <span class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">FIRST50 - ₹50 off</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fare Breakdown -->
+                <div>
+                    <div class="bg-gray-50 rounded-3xl p-8 sticky top-24">
+                        <h3 class="text-2xl font-bold mb-6">Fare Breakdown</h3>
+                        <div class="fare-breakdown space-y-4 mb-6">
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Tickets (2 × ₹350)</span>
+                                <span class="fare-subtotal font-semibold">₹700.00</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Convenience Fee</span>
+                                <span class="fare-convenience font-semibold">₹35.00</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">GST (18%)</span>
+                                <span class="fare-gst font-semibold">₹132.30</span>
+                            </div>
+                            <hr class="border-gray-300">
+                            <div class="flex justify-between text-2xl font-bold">
+                                <span>Total Amount</span>
+                                <span class="fare-total text-red-500">₹867.30</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="scrollToSection('payment')" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold text-lg transition-colors">
+                            Proceed to Payment
+                        </button>
+                        
+                        <div class="mt-6 text-center">
+                            <div class="flex items-center justify-center gap-2 text-sm text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                                <span>Secure payment powered by SSL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Payment Section -->
+    <section id="payment" class="section bg-gray-50">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-12">
+                <h2 class="text-5xl font-bold mb-6 text-gray-900">Payment</h2>
+                <div class="bg-white rounded-3xl p-8 max-w-md mx-auto">
+                    <p class="text-gray-600 mb-3 text-lg">Total Amount</p>
+                    <p class="text-4xl font-bold text-red-500">₹867.30</p>
+                </div>
+            </div>
+            
+            <div class="max-w-4xl mx-auto">
+                <!-- Payment Methods -->
+                <div class="bg-white rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-8">Choose Payment Method</h3>
+                    <div class="space-y-6">
+                        <!-- UPI -->
+                        <div class="payment-option border-2 border-red-200 bg-red-50 rounded-2xl p-6" data-payment="upi">
+                            <div class="flex items-center gap-4 mb-6">
+                                <input type="radio" name="payment" id="upi" class="w-6 h-6 text-red-500" checked>
+                                <label for="upi" class="text-xl font-bold">UPI Payment</label>
+                                <div class="ml-auto flex gap-3">
+                                    <div class="w-12 h-8 bg-orange-500 rounded text-white text-xs flex items-center justify-center font-bold">GPay</div>
+                                    <div class="w-12 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">PPay</div>
+                                    <div class="w-12 h-8 bg-purple-600 rounded text-white text-xs flex items-center justify-center font-bold">PhonePe</div>
+                                </div>
+                            </div>
+                            <input type="text" placeholder="Enter UPI ID (e.g., 9876543210@paytm)" class="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg">
+                        </div>
+                        
+                        <!-- Cards -->
+                        <div class="payment-option border-2 border-gray-200 rounded-2xl p-6 hover:border-red-200 hover:bg-red-50 transition-colors cursor-pointer" data-payment="card">
+                            <div class="flex items-center gap-4">
+                                <input type="radio" name="payment" id="card" class="w-6 h-6 text-red-500">
+                                <label for="card" class="text-xl font-bold cursor-pointer">Credit/Debit Card</label>
+                                <div class="ml-auto flex gap-3">
+                                    <div class="w-12 h-8 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">VISA</div>
+                                    <div class="w-12 h-8 bg-red-600 rounded text-white text-xs flex items-center justify-center font-bold">MC</div>
+                                    <div class="w-12 h-8 bg-blue-800 rounded text-white text-xs flex items-center justify-center font-bold">AMEX</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Net Banking -->
+                        <div class="payment-option border-2 border-gray-200 rounded-2xl p-6 hover:border-red-200 hover:bg-red-50 transition-colors cursor-pointer" data-payment="netbanking">
+                            <div class="flex items-center gap-4">
+                                <input type="radio" name="payment" id="netbanking" class="w-6 h-6 text-red-500">
+                                <label for="netbanking" class="text-xl font-bold cursor-pointer">Net Banking</label>
+                                <div class="ml-auto flex gap-3">
+                                    <div class="w-12 h-8 bg-orange-600 rounded text-white text-xs flex items-center justify-center font-bold">ICICI</div>
+                                    <div class="w-12 h-8 bg-blue-900 rounded text-white text-xs flex items-center justify-center font-bold">HDFC</div>
+                                    <div class="w-12 h-8 bg-red-700 rounded text-white text-xs flex items-center justify-center font-bold">AXIS</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Wallet -->
+                        <div class="payment-option border-2 border-gray-200 rounded-2xl p-6 hover:border-red-200 hover:bg-red-50 transition-colors cursor-pointer" data-payment="wallet">
+                            <div class="flex items-center gap-4">
+                                <input type="radio" name="payment" id="wallet" class="w-6 h-6 text-red-500">
+                                <label for="wallet" class="text-xl font-bold cursor-pointer">Digital Wallet</label>
+                                <div class="ml-auto flex gap-3">
+                                    <div class="w-12 h-8 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">Paytm</div>
+                                    <div class="w-12 h-8 bg-purple-600 rounded text-white text-xs flex items-center justify-center font-bold">Mobikwik</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pay Button -->
+                    <div class="mt-12">
+                        <button class="pay-button w-full bg-red-500 hover:bg-red-600 text-white py-6 rounded-3xl font-bold text-2xl transition-colors">
+                            Pay ₹867.30
+                        </button>
+                        <div class="mt-6 text-center">
+                            <div class="flex items-center justify-center gap-2 text-sm text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                                <span>256-bit SSL encrypted • PCI DSS compliant</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. Success Section -->
+    <section id="success" class="section bg-gradient-to-br from-green-50 to-emerald-50">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-16">
+                <div class="w-32 h-32 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                
+                <h1 class="text-6xl font-bold text-center mb-6 text-gray-900">Booking Confirmed!</h1>
+                <p class="text-2xl text-gray-600 text-center mb-12">Your tickets have been booked successfully</p>
+            </div>
+            
+            <div class="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- QR Code & Booking ID -->
+                <div class="text-center">
+                    <div class="bg-white border-2 border-gray-200 rounded-3xl p-12 shadow-xl">
+                        <div class="w-64 h-64 qr-pattern rounded-3xl mx-auto mb-8 flex items-center justify-center">
+                            <div class="w-16 h-16 bg-white rounded-xl"></div>
+                        </div>
+                        <p class="text-xl font-bold text-gray-900 mb-3">Booking ID</p>
+                        <p class="booking-id text-2xl font-mono font-bold text-red-500 mb-6">MB123456789</p>
+                        <p class="text-gray-600">Show this QR code at the cinema</p>
+                    </div>
+                </div>
+                
+                <!-- Booking Details -->
+                <div>
+                    <div class="bg-white rounded-3xl p-8 shadow-xl mb-8">
+                        <h3 class="text-2xl font-bold mb-6">Booking Details</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Movie</span>
+                                <span class="success-movie font-semibold">Avengers: Endgame</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Theatre</span>
+                                <span class="success-theatre font-semibold">PVR Cinemas</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Date & Time</span>
+                                <span class="success-datetime font-semibold">Dec 15, 2:15 PM</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Seats</span>
+                                <span class="success-seats font-semibold">A5, A6 (Premium)</span>
+                            </div>
+                            <div class="flex justify-between text-lg">
+                                <span class="text-gray-600">Screen</span>
+                                <span class="font-semibold">Screen 3</span>
+                            </div>
+                            <hr class="border-gray-300">
+                            <div class="flex justify-between text-2xl font-bold">
+                                <span>Total Paid</span>
+                                <span class="success-total text-red-500">₹867.30</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="space-y-4">
+                        <button class="download-btn w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold text-lg transition-colors">
+                            Download Ticket
+                        </button>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button class="share-btn bg-white hover:bg-gray-50 text-gray-900 py-3 rounded-2xl font-semibold border-2 border-gray-200 transition-colors">
+                                Share Booking
+                            </button>
+                            <button class="calendar-btn bg-white hover:bg-gray-50 text-gray-900 py-3 rounded-2xl font-semibold border-2 border-gray-200 transition-colors">
+                                Add to Calendar
+                            </button>
+                        </div>
+                        <button onclick="scrollToSection('hero')" class="w-full text-gray-600 py-3 rounded-2xl font-semibold hover:bg-white transition-colors">
+                            Book Another Movie
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. Profile Section -->
+    <section id="profile" class="section bg-white">
+        <div class="max-w-7xl mx-auto px-6 py-20">
+            <div class="text-center mb-16">
+                <div class="w-32 h-32 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-8">
+                    <span class="text-white font-bold text-4xl">AJ</span>
+                </div>
+                <h1 class="text-5xl font-bold mb-4">Ashish John</h1>
+                <p class="text-xl text-gray-600 mb-2">+91 98765 43210</p>
+                <p class="text-lg text-gray-500">ashish.john@email.com</p>
+            </div>
+            
+            <div class="max-w-6xl mx-auto">
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
+                    <div class="bg-gray-50 rounded-3xl p-8 text-center">
+                        <div class="text-4xl font-bold text-red-500 mb-3">12</div>
+                        <div class="text-lg text-gray-600">Movies Watched</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-3xl p-8 text-center">
+                        <div class="text-4xl font-bold text-blue-500 mb-3">₹2,340</div>
+                        <div class="text-lg text-gray-600">Total Spent</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-3xl p-8 text-center">
+                        <div class="text-4xl font-bold text-green-500 mb-3">₹450</div>
+                        <div class="text-lg text-gray-600">Saved</div>
+                    </div>
+                    <div class="bg-gray-50 rounded-3xl p-8 text-center">
+                        <div class="text-4xl font-bold text-purple-500 mb-3">8.4</div>
+                        <div class="text-lg text-gray-600">Avg Rating</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <!-- Recent Bookings -->
+                    <div>
+                        <h3 class="text-3xl font-bold mb-8">Recent Bookings</h3>
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 rounded-3xl p-8">
+                                <div class="flex justify-between items-start mb-6">
+                                    <h4 class="text-xl font-bold">Avengers: Endgame</h4>
+                                    <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold">Confirmed</span>
+                                </div>
+                                <div class="text-gray-600 mb-6 space-y-2">
+                                    <div class="text-lg">PVR Cinemas • Today, Dec 15, 2:15 PM</div>
+                                    <div>Seats: A5, A6 • ₹867.30</div>
+                                </div>
+                                <div class="flex gap-4">
+                                    <button class="bg-red-500 text-white px-6 py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors">Repeat Booking</button>
+                                    <button class="bg-white border-2 border-gray-200 text-gray-700 px-6 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-colors">View Details</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-3xl p-8">
+                                <div class="flex justify-between items-start mb-6">
+                                    <h4 class="text-xl font-bold">Spider-Man: No Way Home</h4>
+                                    <span class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-bold">Completed</span>
+                                </div>
+                                <div class="text-gray-600 mb-6 space-y-2">
+                                    <div class="text-lg">INOX • Dec 10, 7:30 PM</div>
+                                    <div>Seats: D8, D9 • ₹540.00</div>
+                                </div>
+                                <div class="flex gap-4">
+                                    <button class="bg-red-500 text-white px-6 py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors">Repeat Booking</button>
+                                    <button class="bg-yellow-100 text-yellow-700 px-6 py-3 rounded-2xl font-bold hover:bg-yellow-200 transition-colors">Rate Movie</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Settings -->
+                    <div>
+                        <h3 class="text-3xl font-bold mb-8">Account Settings</h3>
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 rounded-3xl p-8">
+                                <h4 class="text-xl font-bold mb-6">Personal Information</h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                                        <input type="text" value="Ashish John" class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                        <input type="email" value="ashish.john@email.com" class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                        <input type="tel" value="+91 98765 43210" class="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                    </div>
+                                </div>
+                                <button class="update-profile-btn w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-2xl font-bold mt-6 transition-colors">
+                                    Update Profile
+                                </button>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-3xl p-8">
+                                <h4 class="text-xl font-bold mb-6">Preferences</h4>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold">Email Notifications</span>
+                                        <button class="w-12 h-6 bg-red-500 rounded-full relative">
+                                            <div class="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold">SMS Notifications</span>
+                                        <button class="w-12 h-6 bg-gray-300 rounded-full relative">
+                                            <div class="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold">Marketing Emails</span>
+                                        <button class="w-12 h-6 bg-red-500 rounded-full relative">
+                                            <div class="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Logout -->
+                <div class="text-center mt-16">
+                    <button onclick="scrollToSection('hero')" class="bg-red-500 hover:bg-red-600 text-white px-12 py-4 rounded-2xl font-bold text-lg transition-colors">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Global state management
+        let appState = {
+            selectedSeats: [],
+            selectedMovie: null,
+            selectedTheatre: null,
+            selectedShowtime: null,
+            selectedDate: null,
+            timeLeft: 272, // 4:32 in seconds
+            currentSection: 'hero',
+            bookingData: {
+                movieTitle: 'Avengers: Endgame',
+                theatre: 'PVR Cinemas, Forum Mall',
+                screen: 'Screen 3',
+                seats: [],
+                totalAmount: 0,
+                bookingId: 'MB' + Math.random().toString(36).substr(2, 9).toUpperCase()
+            },
+            promoCode: null,
+            paymentMethod: 'upi'
+        };
+
+        // Movie poster templates
+        const moviePosters = {
+            'Avengers: Endgame': `
+                <defs>
+                    <linearGradient id="avengersDetailsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#1a1a2e"/>
+                        <stop offset="50%" style="stop-color:#16213e"/>
+                        <stop offset="100%" style="stop-color:#0f3460"/>
+                    </linearGradient>
+                </defs>
+                <rect width="300" height="400" fill="url(#avengersDetailsGrad)"/>
+                <circle cx="150" cy="120" r="40" fill="#ffd700" stroke="#fff" stroke-width="3"/>
+                <polygon points="130,140 150,100 170,140 160,140 150,120 140,140" fill="#1a1a2e"/>
+                <rect x="140" y="125" width="20" height="4" fill="#1a1a2e"/>
+                <text x="150" y="200" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="24" font-weight="bold">AVENGERS</text>
+                <text x="150" y="230" text-anchor="middle" fill="#fff" font-family="Arial" font-size="18">ENDGAME</text>
+                <ellipse cx="80" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                <ellipse cx="120" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                <ellipse cx="150" cy="285" rx="15" ry="50" fill="#444" opacity="0.7"/>
+                <ellipse cx="180" cy="290" rx="15" ry="45" fill="#444" opacity="0.7"/>
+                <ellipse cx="220" cy="300" rx="15" ry="40" fill="#444" opacity="0.7"/>
+                <circle cx="50" cy="50" r="3" fill="#ff6b6b" opacity="0.8"/>
+                <circle cx="250" cy="80" r="3" fill="#4ecdc4" opacity="0.8"/>
+                <circle cx="70" cy="350" r="3" fill="#45b7d1" opacity="0.8"/>
+                <circle cx="230" cy="320" r="3" fill="#f9ca24" opacity="0.8"/>
+                <circle cx="150" cy="350" r="3" fill="#6c5ce7" opacity="0.8"/>
+                <circle cx="200" cy="60" r="3" fill="#fd79a8" opacity="0.8"/>
+            `,
+            'Spider-Man: No Way Home': `
+                <defs>
+                    <radialGradient id="spiderDetailsGrad" cx="50%" cy="30%" r="70%">
+                        <stop offset="0%" style="stop-color:#ff4757"/>
+                        <stop offset="50%" style="stop-color:#c44569"/>
+                        <stop offset="100%" style="stop-color:#2f1b69"/>
+                    </radialGradient>
+                </defs>
+                <rect width="300" height="400" fill="url(#spiderDetailsGrad)"/>
+                <g stroke="#fff" stroke-width="1" opacity="0.3" fill="none">
+                    <circle cx="150" cy="200" r="50"/>
+                    <circle cx="150" cy="200" r="80"/>
+                    <circle cx="150" cy="200" r="110"/>
+                    <line x1="150" y1="90" x2="150" y2="310"/>
+                    <line x1="40" y1="200" x2="260" y2="200"/>
+                    <line x1="85" y1="135" x2="215" y2="265"/>
+                    <line x1="215" y1="135" x2="85" y2="265"/>
+                </g>
+                <g fill="#fff">
+                    <ellipse cx="150" cy="180" rx="25" ry="15"/>
+                    <ellipse cx="150" cy="200" rx="20" ry="25"/>
+                    <polygon points="125,170 135,160 145,170 150,165 155,170 165,160 175,170 165,175 155,185 150,180 145,185 135,175"/>
+                    <polygon points="125,210 135,220 145,210 150,215 155,210 165,220 175,210 165,205 155,195 150,200 145,195 135,205"/>
+                </g>
+                <text x="150" y="280" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="16" font-weight="bold">SPIDER-MAN</text>
+                <text x="150" y="300" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="14">NO WAY HOME</text>
+                <g opacity="0.6">
+                    <ellipse cx="100" cy="320" rx="12" ry="30" fill="#ff4757"/>
+                    <ellipse cx="150" cy="315" rx="12" ry="35" fill="#2ed573"/>
+                    <ellipse cx="200" cy="320" rx="12" ry="30" fill="#1e90ff"/>
+                </g>
+            `,
+            'The Batman': `
+                <defs>
+                    <linearGradient id="batmanDetailsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#000"/>
+                        <stop offset="50%" style="stop-color:#1a1a1a"/>
+                        <stop offset="100%" style="stop-color:#8b0000"/>
+                    </linearGradient>
+                </defs>
+                <rect width="300" height="400" fill="url(#batmanDetailsGrad)"/>
+                <polygon points="0,350 50,320 80,340 120,310 150,330 180,300 220,320 250,310 300,330 300,400 0,400" fill="#000" opacity="0.8"/>
+                <g fill="#ffd700">
+                    <ellipse cx="150" cy="150" rx="60" ry="30"/>
+                    <ellipse cx="120" cy="140" rx="25" ry="20"/>
+                    <ellipse cx="180" cy="140" rx="25" ry="20"/>
+                    <polygon points="150,120 130,100 170,100"/>
+                    <ellipse cx="150" cy="170" rx="15" ry="25"/>
+                </g>
+                <g stroke="#4a90e2" stroke-width="1" opacity="0.4">
+                    <line x1="50" y1="0" x2="45" y2="50"/>
+                    <line x1="100" y1="0" x2="95" y2="60"/>
+                    <line x1="150" y1="0" x2="145" y2="45"/>
+                    <line x1="200" y1="0" x2="195" y2="55"/>
+                    <line x1="250" y1="0" x2="245" y2="40"/>
+                    <line x1="75" y1="100" x2="70" y2="150"/>
+                    <line x1="125" y1="80" x2="120" y2="130"/>
+                    <line x1="175" y1="90" x2="170" y2="140"/>
+                    <line x1="225" y1="70" x2="220" y2="120"/>
+                </g>
+                <text x="150" y="250" text-anchor="middle" fill="#ffd700" font-family="Arial Black" font-size="28" font-weight="bold">THE</text>
+                <text x="150" y="280" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="32" font-weight="bold">BATMAN</text>
+                <path d="M 150 320 Q 100 340 80 380 Q 150 360 150 320 Q 200 340 220 380 Q 150 360 150 320" fill="#000" opacity="0.7"/>
+            `,
+            'Top Gun: Maverick': `
+                <defs>
+                    <linearGradient id="topgunDetailsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff6b35"/>
+                        <stop offset="50%" style="stop-color:#f7931e"/>
+                        <stop offset="100%" style="stop-color:#1e3c72"/>
+                    </linearGradient>
+                </defs>
+                <rect width="300" height="400" fill="url(#topgunDetailsGrad)"/>
+                <g fill="#000" opacity="0.6">
+                    <polygon points="150,80 140,90 130,85 120,90 110,85 100,95 120,100 140,95 150,100 160,95 180,100 200,95 190,90 180,85 170,90 160,85"/>
+                    <ellipse cx="150" cy="95" rx="50" ry="8"/>
+                    <polygon points="150,100 145,120 155,120"/>
+                </g>
+                <g stroke="#fff" stroke-width="2" opacity="0.7" fill="none">
+                    <path d="M 100 95 Q 80 120 60 150"/>
+                    <path d="M 200 95 Q 220 120 240 150"/>
+                </g>
+                <g fill="#ffd700" opacity="0.8">
+                    <ellipse cx="130" cy="180" rx="25" ry="15"/>
+                    <ellipse cx="170" cy="180" rx="25" ry="15"/>
+                    <rect x="145" y="175" width="10" height="3" fill="#333"/>
+                </g>
+                <text x="150" y="250" text-anchor="middle" fill="#fff" font-family="Arial Black" font-size="24" font-weight="bold">TOP GUN</text>
+                <text x="150" y="280" text-anchor="middle" fill="#ffd700" font-family="Arial" font-size="20" font-weight="bold">MAVERICK</text>
+                <g fill="#ffd700" opacity="0.9">
+                    <polygon points="150,320 140,310 160,310"/>
+                    <rect x="145" y="315" width="10" height="15"/>
+                    <polygon points="150,335 145,340 155,340"/>
+                </g>
+                <rect x="0" y="360" width="300" height="40" fill="#333" opacity="0.8"/>
+                <g stroke="#ffd700" stroke-width="1" opacity="0.6">
+                    <line x1="0" y1="370" x2="300" y2="370"/>
+                    <line x1="0" y1="380" x2="300" y2="380"/>
+                    <line x1="0" y1="390" x2="300" y2="390"/>
+                </g>
+            `
+        };
+
+        // Cast templates for each movie
+        const movieCasts = {
+            'Avengers: Endgame': [
+                { name: 'Robert Downey Jr.', character: 'Tony Stark', avatar: 'rdj' },
+                { name: 'Chris Evans', character: 'Steve Rogers', avatar: 'ce' },
+                { name: 'Scarlett Johansson', character: 'Natasha Romanoff', avatar: 'sj' },
+                { name: 'Mark Ruffalo', character: 'Bruce Banner', avatar: 'mr' }
+            ],
+            'Spider-Man: No Way Home': [
+                { name: 'Tom Holland', character: 'Peter Parker', avatar: 'th' },
+                { name: 'Zendaya', character: 'MJ', avatar: 'zendaya' },
+                { name: 'Benedict Cumberbatch', character: 'Doctor Strange', avatar: 'bc' },
+                { name: 'Jacob Batalon', character: 'Ned Leeds', avatar: 'jb' }
+            ],
+            'The Batman': [
+                { name: 'Robert Pattinson', character: 'Bruce Wayne', avatar: 'rp' },
+                { name: 'Zoë Kravitz', character: 'Selina Kyle', avatar: 'zk' },
+                { name: 'Paul Dano', character: 'The Riddler', avatar: 'pd' },
+                { name: 'Jeffrey Wright', character: 'James Gordon', avatar: 'jw' }
+            ],
+            'Top Gun: Maverick': [
+                { name: 'Tom Cruise', character: 'Pete "Maverick" Mitchell', avatar: 'tc' },
+                { name: 'Miles Teller', character: 'Bradley "Rooster" Bradshaw', avatar: 'mt' },
+                { name: 'Jennifer Connelly', character: 'Penny Benjamin', avatar: 'jc' },
+                { name: 'Jon Hamm', character: 'Cyclone', avatar: 'jh' }
+            ]
+        };
+
+        // Actor avatar templates
+        const actorAvatars = {
+            'rdj': `
+                <defs>
+                    <linearGradient id="rdj-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#8B4513"/>
+                        <stop offset="100%" style="stop-color:#D2691E"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="50" fill="url(#rdj-grad)"/>
+                <ellipse cx="50" cy="45" rx="20" ry="25" fill="#FDBCB4"/>
+                <path d="M 30 30 Q 50 20 70 30 Q 65 35 50 35 Q 35 35 30 30" fill="#2F1B14"/>
+                <circle cx="43" cy="40" r="2" fill="#000"/>
+                <circle cx="57" cy="40" r="2" fill="#000"/>
+                <ellipse cx="50" cy="55" rx="3" ry="5" fill="#2F1B14"/>
+                <circle cx="50" cy="80" r="8" fill="#00BFFF" opacity="0.7"/>
+                <circle cx="50" cy="80" r="4" fill="#87CEEB"/>
+            `,
+            'th': `
+                <defs>
+                    <radialGradient id="th-grad" cx="50%" cy="30%" r="70%">
+                        <stop offset="0%" style="stop-color:#ff4757"/>
+                        <stop offset="100%" style="stop-color:#c44569"/>
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="50" fill="url(#th-grad)"/>
+                <ellipse cx="50" cy="45" rx="18" ry="23" fill="#FDBCB4"/>
+                <path d="M 32 32 Q 50 25 68 32 Q 65 38 50 38 Q 35 38 32 32" fill="#8B4513"/>
+                <circle cx="44" cy="41" r="2" fill="#8B4513"/>
+                <circle cx="56" cy="41" r="2" fill="#8B4513"/>
+                <g fill="#ff4757" opacity="0.8">
+                    <ellipse cx="50" cy="80" rx="8" ry="4"/>
+                    <circle cx="45" cy="78" r="2"/>
+                    <circle cx="55" cy="78" r="2"/>
+                </g>
+            `,
+            'rp': `
+                <defs>
+                    <linearGradient id="rp-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#000"/>
+                        <stop offset="100%" style="stop-color:#333"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="50" fill="url(#rp-grad)"/>
+                <ellipse cx="50" cy="45" rx="19" ry="24" fill="#FDBCB4"/>
+                <path d="M 31 30 Q 50 22 69 30 Q 66 38 50 38 Q 34 38 31 30" fill="#2F1B14"/>
+                <circle cx="43" cy="42" r="2" fill="#4169E1"/>
+                <circle cx="57" cy="42" r="2" fill="#4169E1"/>
+                <g fill="#ffd700" opacity="0.9">
+                    <ellipse cx="50" cy="80" rx="12" ry="6"/>
+                    <polygon points="44,77 50,74 56,77 50,80"/>
+                </g>
+            `,
+            'tc': `
+                <defs>
+                    <linearGradient id="tc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ff6b35"/>
+                        <stop offset="100%" style="stop-color:#f7931e"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="50" fill="url(#tc-grad)"/>
+                <ellipse cx="50" cy="45" rx="18" ry="23" fill="#FDBCB4"/>
+                <path d="M 32 32 Q 50 24 68 32 Q 65 38 50 38 Q 35 38 32 32" fill="#8B4513"/>
+                <circle cx="44" cy="41" r="2" fill="#228B22"/>
+                <circle cx="56" cy="41" r="2" fill="#228B22"/>
+                <g fill="#ffd700" opacity="0.8">
+                    <ellipse cx="42" cy="42" rx="8" ry="4"/>
+                    <ellipse cx="58" cy="42" rx="8" ry="4"/>
+                </g>
+                <g fill="#ffd700" opacity="0.9">
+                    <polygon points="50,75 45,80 55,80"/>
+                    <rect x="47" y="80" width="6" height="8"/>
+                </g>
+            `
+        };
+
+        // Movie database with complete information
+        const movieDatabase = {
+            'Avengers: Endgame': {
+                title: 'Avengers: Endgame',
+                genre: 'Action • Adventure',
+                duration: '181 min',
+                rating: '8.4',
+                certification: 'U/A',
+                director: 'Anthony Russo, Joe Russo',
+                language: 'English',
+                releaseDate: 'April 26, 2019',
+                synopsis: 'After the devastating events of Avengers: Infinity War, the universe is in ruins due to the efforts of the Mad Titan, Thanos. With the help of remaining allies, the Avengers must assemble once more in order to undo Thanos\' actions and restore order to the universe once and for all, no matter what consequences may be in store.',
+                cast: [
+                    { name: 'Robert Downey Jr.', character: 'Tony Stark' },
+                    { name: 'Chris Evans', character: 'Steve Rogers' },
+                    { name: 'Scarlett Johansson', character: 'Natasha Romanoff' },
+                    { name: 'Mark Ruffalo', character: 'Bruce Banner' }
+                ],
+                formats: ['2D', '3D', 'IMAX'],
+                gradient: 'from-blue-500 to-purple-600',
+                theatres: {
+                    'PVR Cinemas': {
+                        name: 'PVR Cinemas',
+                        location: 'Forum Mall, Koramangala',
+                        rating: '4.2',
+                        distance: '2.5 km away',
+                        amenities: ['Parking Available'],
+                        showtimes: {
+                            'Premium': {
+                                price: 350,
+                                times: ['10:30 AM', '2:15 PM', '6:45 PM'],
+                                availability: ['Available', 'Filling Fast', 'Available']
+                            },
+                            'Normal': {
+                                price: 180,
+                                times: ['12:00 PM', '4:15 PM', '8:45 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            }
+                        }
+                    },
+                    'INOX': {
+                        name: 'INOX',
+                        location: 'Mantri Square Mall',
+                        rating: '4.0',
+                        distance: '4.2 km away',
+                        amenities: ['Food Court'],
+                        showtimes: {
+                            'Executive': {
+                                price: 220,
+                                times: ['11:15 AM', '3:00 PM', '8:15 PM'],
+                                availability: ['Available', 'Available', 'Few Left']
+                            }
+                        }
+                    }
+                }
+            },
+            'Spider-Man: No Way Home': {
+                title: 'Spider-Man: No Way Home',
+                genre: 'Action • Adventure',
+                duration: '148 min',
+                rating: '8.7',
+                certification: 'U/A',
+                director: 'Jon Watts',
+                language: 'English',
+                releaseDate: 'December 17, 2021',
+                synopsis: 'With Spider-Man\'s identity now revealed, Peter asks Doctor Strange for help. When a spell goes wrong, dangerous foes from other worlds start to appear, forcing Peter to discover what it truly means to be Spider-Man.',
+                cast: [
+                    { name: 'Tom Holland', character: 'Peter Parker' },
+                    { name: 'Zendaya', character: 'MJ' },
+                    { name: 'Benedict Cumberbatch', character: 'Doctor Strange' },
+                    { name: 'Jacob Batalon', character: 'Ned Leeds' }
+                ],
+                formats: ['2D', 'IMAX'],
+                gradient: 'from-red-500 to-pink-600',
+                theatres: {
+                    'PVR Cinemas': {
+                        name: 'PVR Cinemas',
+                        location: 'Forum Mall, Koramangala',
+                        rating: '4.2',
+                        distance: '2.5 km away',
+                        amenities: ['Parking Available'],
+                        showtimes: {
+                            'Premium': {
+                                price: 380,
+                                times: ['11:00 AM', '3:30 PM', '7:00 PM'],
+                                availability: ['Available', 'Available', 'Filling Fast']
+                            },
+                            'Normal': {
+                                price: 200,
+                                times: ['1:00 PM', '5:30 PM', '9:15 PM'],
+                                availability: ['Available', 'Few Left', 'Available']
+                            }
+                        }
+                    },
+                    'INOX': {
+                        name: 'INOX',
+                        location: 'Mantri Square Mall',
+                        rating: '4.0',
+                        distance: '4.2 km away',
+                        amenities: ['Food Court'],
+                        showtimes: {
+                            'Executive': {
+                                price: 250,
+                                times: ['12:30 PM', '4:45 PM', '8:30 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            }
+                        }
+                    }
+                }
+            },
+            'The Batman': {
+                title: 'The Batman',
+                genre: 'Action • Crime',
+                duration: '176 min',
+                rating: '7.9',
+                certification: 'U/A',
+                director: 'Matt Reeves',
+                language: 'English',
+                releaseDate: 'March 4, 2022',
+                synopsis: 'When the Riddler, a sadistic serial killer, begins murdering key political figures in Gotham, Batman is forced to investigate the city\'s hidden corruption and question his family\'s involvement.',
+                cast: [
+                    { name: 'Robert Pattinson', character: 'Bruce Wayne' },
+                    { name: 'Zoë Kravitz', character: 'Selina Kyle' },
+                    { name: 'Paul Dano', character: 'The Riddler' },
+                    { name: 'Jeffrey Wright', character: 'James Gordon' }
+                ],
+                formats: ['2D', 'IMAX'],
+                gradient: 'from-green-500 to-teal-600',
+                theatres: {
+                    'PVR Cinemas': {
+                        name: 'PVR Cinemas',
+                        location: 'Forum Mall, Koramangala',
+                        rating: '4.2',
+                        distance: '2.5 km away',
+                        amenities: ['Parking Available'],
+                        showtimes: {
+                            'Premium': {
+                                price: 360,
+                                times: ['10:00 AM', '2:30 PM', '7:30 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            },
+                            'Normal': {
+                                price: 190,
+                                times: ['12:30 PM', '5:00 PM', '9:30 PM'],
+                                availability: ['Available', 'Available', 'Few Left']
+                            }
+                        }
+                    },
+                    'INOX': {
+                        name: 'INOX',
+                        location: 'Mantri Square Mall',
+                        rating: '4.0',
+                        distance: '4.2 km away',
+                        amenities: ['Food Court'],
+                        showtimes: {
+                            'Executive': {
+                                price: 240,
+                                times: ['11:30 AM', '4:00 PM', '8:45 PM'],
+                                availability: ['Available', 'Filling Fast', 'Available']
+                            }
+                        }
+                    }
+                }
+            },
+            'Top Gun: Maverick': {
+                title: 'Top Gun: Maverick',
+                genre: 'Action • Drama',
+                duration: '130 min',
+                rating: '8.2',
+                certification: 'U/A',
+                director: 'Joseph Kosinski',
+                language: 'English',
+                releaseDate: 'May 27, 2022',
+                synopsis: 'After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads TOP GUN\'s elite graduates on a mission that demands the ultimate sacrifice.',
+                cast: [
+                    { name: 'Tom Cruise', character: 'Pete "Maverick" Mitchell' },
+                    { name: 'Miles Teller', character: 'Bradley "Rooster" Bradshaw' },
+                    { name: 'Jennifer Connelly', character: 'Penny Benjamin' },
+                    { name: 'Jon Hamm', character: 'Cyclone' }
+                ],
+                formats: ['2D', 'IMAX'],
+                gradient: 'from-yellow-500 to-orange-600',
+                theatres: {
+                    'PVR Cinemas': {
+                        name: 'PVR Cinemas',
+                        location: 'Forum Mall, Koramangala',
+                        rating: '4.2',
+                        distance: '2.5 km away',
+                        amenities: ['Parking Available'],
+                        showtimes: {
+                            'Premium': {
+                                price: 340,
+                                times: ['11:30 AM', '3:45 PM', '8:00 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            },
+                            'Normal': {
+                                price: 170,
+                                times: ['1:15 PM', '6:00 PM', '10:15 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            }
+                        }
+                    },
+                    'INOX': {
+                        name: 'INOX',
+                        location: 'Mantri Square Mall',
+                        rating: '4.0',
+                        distance: '4.2 km away',
+                        amenities: ['Food Court'],
+                        showtimes: {
+                            'Executive': {
+                                price: 210,
+                                times: ['12:45 PM', '5:15 PM', '9:00 PM'],
+                                availability: ['Available', 'Available', 'Available']
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        // Utility functions
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-24 right-6 z-50 px-6 py-4 rounded-2xl font-semibold text-white transform translate-x-full transition-transform duration-300 ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'error' ? 'bg-red-500' : 
+                'bg-blue-500'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.remove('translate-x-full'), 100);
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        function animateElement(element, animation = 'pulse') {
+            element.style.animation = `${animation} 0.3s ease`;
+            setTimeout(() => element.style.animation = '', 300);
+        }
+
+        // Navigation and scrolling
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                appState.currentSection = sectionId;
+                updateActiveNavDot(sectionId);
+                
+                // Add entrance animations
+                setTimeout(() => {
+                    const elements = section.querySelectorAll('.animate-on-enter');
+                    elements.forEach((el, index) => {
+                        setTimeout(() => {
+                            el.style.opacity = '1';
+                            el.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    });
+                }, 300);
+            }
+        }
+
+        function updateActiveNavDot(sectionId) {
+            const sections = ['hero', 'movies', 'movie-details', 'theatres', 'seats', 'cart', 'payment', 'success', 'profile'];
+            const dots = document.querySelectorAll('.nav-dot');
+            
+            const index = sections.indexOf(sectionId);
+            if (index !== -1 && dots[index]) {
+                dots.forEach(dot => dot.classList.remove('active'));
+                dots[index].classList.add('active');
+            }
+        }
+
+        // Movie selection functionality
+        function selectMovie(movieCard) {
+            // Remove previous selections
+            document.querySelectorAll('.movie-card').forEach(card => {
+                card.classList.remove('ring-4', 'ring-red-500', 'ring-opacity-50');
+            });
+            
+            // Add selection to clicked movie
+            movieCard.classList.add('ring-4', 'ring-red-500', 'ring-opacity-50');
+            
+            const movieTitle = movieCard.getAttribute('data-movie') || movieCard.querySelector('h3').textContent;
+            appState.selectedMovie = movieTitle;
+            appState.bookingData.movieTitle = movieTitle;
+            
+            // Reset booking state for new movie
+            appState.selectedSeats = [];
+            appState.selectedTheatre = null;
+            appState.selectedShowtime = null;
+            appState.promoCode = null;
+            
+            // Update movie details page
+            updateMovieDetailsPage(movieTitle);
+            
+            animateElement(movieCard, 'bounce');
+            showNotification(`Selected: ${movieTitle}`);
+            
+            setTimeout(() => scrollToSection('movie-details'), 1000);
+        }
+
+        // Update movie details page with selected movie data
+        function updateMovieDetailsPage(movieTitle) {
+            const movie = movieDatabase[movieTitle];
+            if (!movie) return;
+            
+            // Update movie poster in details page
+            const posterSvg = document.getElementById('movie-poster-svg');
+            if (posterSvg && moviePosters[movieTitle]) {
+                posterSvg.innerHTML = moviePosters[movieTitle];
+            }
+            
+            // Update cart poster
+            const cartPoster = document.getElementById('cart-movie-poster');
+            if (cartPoster && moviePosters[movieTitle]) {
+                const cartSvg = cartPoster.querySelector('svg');
+                if (cartSvg) {
+                    cartSvg.innerHTML = moviePosters[movieTitle].replace(/DetailsGrad/g, 'CartGrad');
+                }
+            }
+            
+            // Update hero section
+            const heroSection = document.querySelector('#movie-hero-section');
+            if (heroSection) {
+                heroSection.className = `bg-gradient-to-r ${movie.gradient} rounded-3xl overflow-hidden mb-12`;
+                
+                // Update movie title
+                const titleElement = heroSection.querySelector('h1');
+                if (titleElement) titleElement.textContent = movie.title;
+                
+                // Update rating and details
+                const detailsContainer = heroSection.querySelector('.flex.flex-wrap');
+                if (detailsContainer) {
+                    detailsContainer.innerHTML = `
+                        <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">⭐ ${movie.rating}/10</span>
+                        <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">${movie.duration}</span>
+                        <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">${movie.genre.split(' • ')[0]}</span>
+                        <span class="bg-black bg-opacity-30 px-4 py-2 rounded-full font-semibold">${movie.certification}</span>
+                    `;
+                }
+                
+                // Update synopsis
+                const synopsisElement = heroSection.querySelector('p');
+                if (synopsisElement) synopsisElement.textContent = movie.synopsis;
+            }
+            
+            // Update synopsis section
+            const synopsisSection = document.querySelector('#movie-details .bg-white p');
+            if (synopsisSection) synopsisSection.textContent = movie.synopsis;
+            
+            // Update cast section with real actor avatars
+            const castContainer = document.getElementById('cast-container');
+            if (castContainer && movieCasts[movieTitle]) {
+                castContainer.innerHTML = movieCasts[movieTitle].map(actor => {
+                    const avatarSvg = actorAvatars[actor.avatar] || actorAvatars['rdj']; // fallback
+                    return `
+                        <div class="text-center">
+                            <div class="w-24 h-24 rounded-full mb-4 mx-auto overflow-hidden">
+                                <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                    ${avatarSvg}
+                                </svg>
+                            </div>
+                            <p class="font-bold">${actor.name}</p>
+                            <p class="text-sm text-gray-600">${actor.character}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Update movie info
+            const movieInfoContainer = document.querySelector('#movie-details .space-y-4');
+            if (movieInfoContainer) {
+                movieInfoContainer.innerHTML = `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Director</span>
+                        <span class="font-semibold">${movie.director}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Genre</span>
+                        <span class="font-semibold">${movie.genre}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Duration</span>
+                        <span class="font-semibold">${movie.duration}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Language</span>
+                        <span class="font-semibold">${movie.language}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Release Date</span>
+                        <span class="font-semibold">${movie.releaseDate}</span>
+                    </div>
+                `;
+            }
+            
+            // Update theatres section
+            updateTheatresSection(movieTitle);
+        }
+
+        // Update theatres section with movie-specific data
+        function updateTheatresSection(movieTitle) {
+            const movie = movieDatabase[movieTitle];
+            if (!movie) return;
+            
+            const theatresContainer = document.querySelector('#theatres .grid.grid-cols-1.lg\\:grid-cols-2');
+            if (!theatresContainer) return;
+            
+            theatresContainer.innerHTML = Object.values(movie.theatres).map(theatre => {
+                const amenityBadges = theatre.amenities.map(amenity => {
+                    const color = amenity.includes('Parking') ? 'green' : 'blue';
+                    return `<span class="bg-${color}-100 text-${color}-700 px-3 py-1 rounded-full text-sm font-semibold">${amenity}</span>`;
+                }).join('');
+                
+                const showtimeSections = Object.entries(theatre.showtimes).map(([category, data]) => {
+                    const categoryColor = category === 'Premium' ? 'purple' : category === 'Executive' ? 'blue' : 'green';
+                    const showtimeButtons = data.times.map((time, index) => {
+                        const availability = data.availability[index];
+                        const buttonColor = availability === 'Available' ? 'green' : 
+                                          availability === 'Filling Fast' ? 'red' : 'yellow';
+                        
+                        return `
+                            <button class="showtime-btn bg-${buttonColor}-${buttonColor === 'red' ? '500' : '100'} text-${buttonColor === 'red' ? 'white' : buttonColor + '-700'} px-6 py-4 rounded-2xl font-bold hover:bg-${buttonColor}-${buttonColor === 'red' ? '600' : '200'} transition-colors" 
+                                    onclick="selectShowtime(this, '${theatre.name}', '${time}', ${data.price}, '${category}')">
+                                <div class="text-center">
+                                    <div class="time text-lg">${time}</div>
+                                    <div class="status text-xs opacity-70">${availability}</div>
+                                </div>
+                            </button>
+                        `;
+                    }).join('');
+                    
+                    return `
+                        <div class="price-section">
+                            <div class="flex items-center justify-between mb-6">
+                                <span class="price text-xl font-bold text-${categoryColor}-600">${category} - ₹${data.price}</span>
+                                <span class="text-sm text-gray-500 bg-${categoryColor}-100 px-3 py-1 rounded-full">${category === 'Premium' ? 'Recliner Seats' : category === 'Executive' ? 'Premium Seats' : 'Regular Seats'}</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                ${showtimeButtons}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="theatre-card bg-gray-50 rounded-3xl p-8">
+                        <div class="mb-8">
+                            <h3 class="text-2xl font-bold mb-2">${theatre.name}</h3>
+                            <p class="text-gray-600 mb-4">${theatre.location}</p>
+                            <div class="flex items-center gap-6">
+                                <span class="text-green-600 font-bold text-lg">⭐ ${theatre.rating}</span>
+                                <span class="text-gray-600">${theatre.distance}</span>
+                                ${amenityBadges}
+                            </div>
+                        </div>
+                        <div class="space-y-8">
+                            ${showtimeSections}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter functionality
+        function filterMovies(genre) {
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const movieCards = document.querySelectorAll('.movie-card');
+            
+            // Update active filter button
+            filterButtons.forEach(btn => {
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.classList.add('text-gray-700');
+            });
+            
+            event.target.classList.add('bg-red-500', 'text-white');
+            event.target.classList.remove('text-gray-700');
+            
+            // Filter movies based on genre
+            movieCards.forEach((card, index) => {
+                const movieTitle = card.querySelector('h3').textContent;
+                const movieData = movieDatabase[movieTitle];
+                
+                card.style.opacity = '0.3';
+                card.style.transform = 'scale(0.95)';
+                
+                setTimeout(() => {
+                    if (genre === 'All Movies' || (movieData && movieData.genre.includes(genre))) {
+                        card.style.display = 'block';
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }, index * 50);
+            });
+            
+            // Count visible movies
+            setTimeout(() => {
+                const visibleMovies = Array.from(movieCards).filter(card => 
+                    card.style.display !== 'none'
+                ).length;
+                
+                showNotification(`Showing ${visibleMovies} ${genre === 'All Movies' ? '' : genre} movie${visibleMovies !== 1 ? 's' : ''}`);
+            }, 500);
+        }
+
+        // Date selection
+        function selectDate(dateButton) {
+            const dateButtons = document.querySelectorAll('.date-btn');
+            dateButtons.forEach(btn => {
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.classList.add('text-gray-700');
+            });
+            
+            dateButton.classList.add('bg-red-500', 'text-white');
+            dateButton.classList.remove('text-gray-700');
+            
+            const dateText = dateButton.querySelector('div').textContent;
+            appState.selectedDate = dateText;
+            
+            animateElement(dateButton);
+            showNotification(`Selected date: ${dateText}`);
+            
+            // Update showtimes availability
+            updateShowtimes();
+        }
+
+        // Theatre and showtime selection
+        function selectShowtime(showtimeButton, theatreName, time, price, category) {
+            appState.selectedTheatre = theatreName;
+            appState.selectedShowtime = time;
+            appState.selectedCategory = category;
+            appState.selectedPrice = price;
+            appState.bookingData.theatre = theatreName;
+            
+            // Visual feedback
+            document.querySelectorAll('.showtime-btn').forEach(btn => {
+                btn.classList.remove('ring-4', 'ring-red-500');
+            });
+            showtimeButton.classList.add('ring-4', 'ring-red-500');
+            
+            // Update seat map for selected category and price
+            updateSeatMap(category, price);
+            
+            animateElement(showtimeButton);
+            showNotification(`Selected: ${theatreName} at ${time} (${category} - ₹${price})`);
+            
+            setTimeout(() => scrollToSection('seats'), 1500);
+        }
+
+        // Update seat map based on selected showtime
+        function updateSeatMap(category, price) {
+            // Reset selected seats for new showtime
+            appState.selectedSeats = [];
+            
+            // Update seat pricing display
+            const seatSection = document.querySelector('#seats');
+            if (seatSection) {
+                // Update section title
+                const titleElement = seatSection.querySelector('p');
+                if (titleElement) {
+                    titleElement.textContent = `${appState.selectedTheatre} • Screen 3 • Today, ${appState.selectedShowtime}`;
+                }
+                
+                // Reset all seats to available state
+                document.querySelectorAll('.seat').forEach(seat => {
+                    if (!seat.classList.contains('booked')) {
+                        seat.classList.remove('selected');
+                        seat.classList.add('available');
+                    }
+                });
+                
+                // Update pricing labels based on category
+                updateSeatPricingLabels(category, price);
+                
+                // Randomly set some seats as booked for realism
+                randomizeBookedSeats();
+            }
+            
+            updateContinueButton();
+        }
+
+        // Update seat pricing labels
+        function updateSeatPricingLabels(selectedCategory, selectedPrice) {
+            const premiumSection = document.querySelector('#seats .space-y-12 > div:first-child');
+            const normalSection = document.querySelector('#seats .space-y-12 > div:last-child');
+            
+            if (selectedCategory === 'Premium') {
+                // Show only premium section
+                if (premiumSection) {
+                    premiumSection.style.display = 'block';
+                    const priceLabel = premiumSection.querySelector('.text-2xl');
+                    if (priceLabel) priceLabel.textContent = `Premium - ₹${selectedPrice}`;
+                }
+                if (normalSection) normalSection.style.display = 'none';
+            } else if (selectedCategory === 'Executive') {
+                // Show executive as premium section
+                if (premiumSection) {
+                    premiumSection.style.display = 'block';
+                    const priceLabel = premiumSection.querySelector('.text-2xl');
+                    if (priceLabel) {
+                        priceLabel.textContent = `Executive - ₹${selectedPrice}`;
+                        priceLabel.className = 'text-2xl font-bold text-blue-600';
+                    }
+                    const categoryLabel = premiumSection.querySelector('.bg-purple-100');
+                    if (categoryLabel) {
+                        categoryLabel.textContent = 'Premium Seats';
+                        categoryLabel.className = 'text-sm text-gray-500 bg-blue-100 px-4 py-2 rounded-full font-semibold';
+                    }
+                }
+                if (normalSection) normalSection.style.display = 'none';
+            } else {
+                // Show both sections for normal category
+                if (premiumSection) {
+                    premiumSection.style.display = 'block';
+                    const priceLabel = premiumSection.querySelector('.text-2xl');
+                    if (priceLabel) priceLabel.textContent = `Premium - ₹${selectedPrice + 170}`;
+                }
+                if (normalSection) {
+                    normalSection.style.display = 'block';
+                    const priceLabel = normalSection.querySelector('.text-2xl');
+                    if (priceLabel) priceLabel.textContent = `Normal - ₹${selectedPrice}`;
+                }
+            }
+        }
+
+        // Randomize booked seats for realism
+        function randomizeBookedSeats() {
+            const allSeats = document.querySelectorAll('.seat');
+            
+            // Reset all seats first
+            allSeats.forEach(seat => {
+                seat.classList.remove('booked', 'selected');
+                seat.classList.add('available');
+            });
+            
+            // Randomly book some seats (10-20% of total)
+            const totalSeats = allSeats.length;
+            const bookedCount = Math.floor(totalSeats * (0.1 + Math.random() * 0.1));
+            
+            const seatsArray = Array.from(allSeats);
+            for (let i = 0; i < bookedCount; i++) {
+                const randomIndex = Math.floor(Math.random() * seatsArray.length);
+                const seat = seatsArray[randomIndex];
+                
+                if (seat && !seat.classList.contains('booked')) {
+                    seat.classList.remove('available');
+                    seat.classList.add('booked');
+                    seat.onclick = null; // Remove click handler for booked seats
+                }
+            }
+            
+            // Re-add click handlers to available seats
+            document.querySelectorAll('.seat.available').forEach(seat => {
+                seat.onclick = () => toggleSeat(seat);
+            });
+        }
+
+        function updateShowtimes() {
+            const showtimeButtons = document.querySelectorAll('.showtime-btn');
+            showtimeButtons.forEach(btn => {
+                btn.style.opacity = '0.5';
+                setTimeout(() => {
+                    btn.style.opacity = '1';
+                    // Randomly update availability
+                    const statuses = ['Available', 'Filling Fast', 'Few Left'];
+                    const colors = ['bg-green-100 text-green-700', 'bg-red-500 text-white', 'bg-yellow-100 text-yellow-700'];
+                    const randomIndex = Math.floor(Math.random() * 3);
+                    
+                    const statusEl = btn.querySelector('.status');
+                    if (statusEl) {
+                        statusEl.textContent = statuses[randomIndex];
+                        statusEl.className = `text-xs opacity-70 ${colors[randomIndex]} px-2 py-1 rounded-full`;
+                    }
+                }, 500);
+            });
+        }
+
+        // Seat selection functionality
+        function toggleSeat(seat) {
+            if (seat.classList.contains('booked')) {
+                animateElement(seat, 'shake');
+                showNotification('This seat is already booked', 'error');
+                return;
+            }
+            
+            const row = seat.closest('.seat-row').querySelector('.row-label').textContent;
+            const seatNumber = seat.textContent;
+            const seatId = `${row}${seatNumber}`;
+            
+            if (seat.classList.contains('selected')) {
+                // Deselect seat
+                seat.classList.remove('selected');
+                seat.classList.add('available');
+                appState.selectedSeats = appState.selectedSeats.filter(s => s.id !== seatId);
+                showNotification(`Deselected seat ${seatId}`);
+            } else {
+                // Select seat (max 6 seats)
+                if (appState.selectedSeats.length >= 6) {
+                    showNotification('Maximum 6 seats allowed', 'error');
+                    animateElement(seat, 'shake');
+                    return;
+                }
+                
+                seat.classList.remove('available');
+                seat.classList.add('selected');
+                
+                // Determine seat type and price based on current selection
+                let seatType, seatPrice;
+                
+                if (appState.selectedCategory === 'Premium') {
+                    seatType = 'Premium';
+                    seatPrice = appState.selectedPrice;
+                } else if (appState.selectedCategory === 'Executive') {
+                    seatType = 'Executive';
+                    seatPrice = appState.selectedPrice;
+                } else {
+                    // Normal category - check if premium or normal row
+                    const isPremiumRow = row <= 'C';
+                    seatType = isPremiumRow ? 'Premium' : 'Normal';
+                    seatPrice = isPremiumRow ? appState.selectedPrice + 170 : appState.selectedPrice;
+                }
+                
+                appState.selectedSeats.push({
+                    id: seatId,
+                    row: row,
+                    number: seatNumber,
+                    type: seatType,
+                    price: seatPrice
+                });
+                
+                showNotification(`Selected seat ${seatId} (${seatType} - ₹${seatPrice})`);
+            }
+            
+            animateElement(seat);
+            updateContinueButton();
+            updateBookingSummary();
+        }
+
+        function updateContinueButton() {
+            const continueBtn = document.getElementById('continue-btn');
+            if (continueBtn) {
+                const count = appState.selectedSeats.length;
+                const total = appState.selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+                
+                if (count === 0) {
+                    continueBtn.textContent = 'Select seats to continue';
+                    continueBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    continueBtn.disabled = true;
+                } else {
+                    continueBtn.textContent = `Continue (${count} seat${count > 1 ? 's' : ''} - ₹${total})`;
+                    continueBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    continueBtn.disabled = false;
+                }
+            }
+        }
+
+        function updateBookingSummary() {
+            appState.bookingData.seats = appState.selectedSeats;
+            const subtotal = appState.selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+            const convenienceFee = Math.round(subtotal * 0.05);
+            const gst = Math.round((subtotal + convenienceFee) * 0.18);
+            appState.bookingData.totalAmount = subtotal + convenienceFee + gst;
+            
+            // Update cart section if visible
+            updateCartDisplay();
+        }
+
+        // Timer functionality
+        function updateTimer() {
+            const minutes = Math.floor(appState.timeLeft / 60);
+            const seconds = appState.timeLeft % 60;
+            const timerElement = document.getElementById('timer');
+            
+            if (timerElement) {
+                timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Change color based on time left
+                if (appState.timeLeft < 60) {
+                    timerElement.classList.add('text-red-600');
+                    timerElement.classList.remove('text-yellow-800');
+                } else if (appState.timeLeft < 120) {
+                    timerElement.classList.add('text-orange-600');
+                    timerElement.classList.remove('text-yellow-800');
+                }
+            }
+            
+            if (appState.timeLeft > 0) {
+                appState.timeLeft--;
+                setTimeout(updateTimer, 1000);
+            } else {
+                // Timer expired
+                showNotification('Session expired! Please start again.', 'error');
+                setTimeout(() => scrollToSection('hero'), 2000);
+            }
+        }
+
+        // Cart functionality
+        function updateCartDisplay() {
+            let subtotal = appState.selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+            const convenienceFee = Math.round(subtotal * 0.05);
+            
+            // Apply promo code discount if available
+            if (appState.promoCode) {
+                if (appState.promoCode.type === 'percentage') {
+                    subtotal = Math.round(subtotal * (1 - appState.promoCode.discount));
+                } else {
+                    subtotal = Math.max(0, subtotal - appState.promoCode.discount);
+                }
+            }
+            
+            const gst = Math.round((subtotal + convenienceFee) * 0.18);
+            const total = subtotal + convenienceFee + gst;
+            
+            // Update booking data
+            appState.bookingData.totalAmount = total;
+            
+            // Update fare breakdown
+            const fareElements = {
+                subtotal: document.querySelector('.fare-subtotal'),
+                convenience: document.querySelector('.fare-convenience'),
+                gst: document.querySelector('.fare-gst'),
+                total: document.querySelector('.fare-total')
+            };
+            
+            // Update ticket count and pricing display
+            const seatCount = appState.selectedSeats.length;
+            const ticketText = document.querySelector('.fare-breakdown .flex:first-child span:first-child');
+            if (ticketText && seatCount > 0) {
+                const avgPrice = Math.round(appState.selectedSeats.reduce((sum, seat) => sum + seat.price, 0) / seatCount);
+                ticketText.textContent = `Tickets (${seatCount} × ₹${avgPrice})`;
+            }
+            
+            if (fareElements.subtotal) fareElements.subtotal.textContent = `₹${subtotal}.00`;
+            if (fareElements.convenience) fareElements.convenience.textContent = `₹${convenienceFee}.00`;
+            if (fareElements.gst) fareElements.gst.textContent = `₹${gst}.00`;
+            if (fareElements.total) fareElements.total.textContent = `₹${total}.00`;
+            
+            // Update seat display
+            const seatDisplay = document.querySelector('.selected-seats');
+            if (seatDisplay && appState.selectedSeats.length > 0) {
+                const seatText = appState.selectedSeats.map(seat => seat.id).join(', ');
+                const seatTypes = [...new Set(appState.selectedSeats.map(seat => seat.type))];
+                seatDisplay.textContent = `${seatText} (${seatTypes.join(', ')})`;
+            }
+            
+            // Update movie details in cart
+            const movieDetailsElements = {
+                title: document.querySelector('#cart h4'),
+                theatre: document.querySelector('#cart .space-y-3 .flex:first-child span:last-child'),
+                datetime: document.querySelector('#cart .space-y-3 .flex:nth-child(2) span:last-child'),
+                screen: document.querySelector('#cart .space-y-3 .flex:last-child span:last-child')
+            };
+            
+            if (movieDetailsElements.title) movieDetailsElements.title.textContent = appState.bookingData.movieTitle;
+            if (movieDetailsElements.theatre) movieDetailsElements.theatre.textContent = appState.bookingData.theatre;
+            if (movieDetailsElements.datetime && appState.selectedDate && appState.selectedShowtime) {
+                movieDetailsElements.datetime.textContent = `${appState.selectedDate}, ${appState.selectedShowtime}`;
+            }
+            
+            // Update payment button
+            const payButton = document.querySelector('.pay-button');
+            if (payButton) {
+                payButton.textContent = `Pay ₹${total}.00`;
+            }
+        }
+
+        // Promo code functionality
+        function applyPromoCode() {
+            const promoInput = document.querySelector('.promo-input');
+            const promoCode = promoInput.value.toUpperCase();
+            
+            const validCodes = {
+                'SAVE20': { discount: 0.20, type: 'percentage', description: '20% off' },
+                'FIRST50': { discount: 50, type: 'fixed', description: '₹50 off' },
+                'WELCOME': { discount: 0.15, type: 'percentage', description: '15% off' },
+                'STUDENT': { discount: 100, type: 'fixed', description: '₹100 off' }
+            };
+            
+            if (validCodes[promoCode]) {
+                appState.promoCode = validCodes[promoCode];
+                showNotification(`Promo code applied: ${validCodes[promoCode].description}`, 'success');
+                
+                // Visual feedback
+                promoInput.classList.add('border-green-500', 'bg-green-50');
+                promoInput.classList.remove('border-gray-200');
+                
+                updateCartDisplay();
+                animateElement(promoInput.parentElement);
+            } else {
+                showNotification('Invalid promo code', 'error');
+                promoInput.classList.add('border-red-500', 'bg-red-50');
+                promoInput.classList.remove('border-gray-200');
+                animateElement(promoInput, 'shake');
+            }
+        }
+
+        // Payment functionality
+        function selectPaymentMethod(method) {
+            appState.paymentMethod = method;
+            
+            // Update UI
+            document.querySelectorAll('.payment-option').forEach(option => {
+                option.classList.remove('border-red-200', 'bg-red-50');
+                option.classList.add('border-gray-200');
+            });
+            
+            const selectedOption = document.querySelector(`[data-payment="${method}"]`);
+            if (selectedOption) {
+                selectedOption.classList.remove('border-gray-200');
+                selectedOption.classList.add('border-red-200', 'bg-red-50');
+                animateElement(selectedOption);
+            }
+            
+            showNotification(`Selected: ${method.toUpperCase()} payment`);
+        }
+
+        function processPayment() {
+            const payButton = document.querySelector('.pay-button');
+            if (payButton) {
+                payButton.textContent = 'Processing...';
+                payButton.disabled = true;
+                payButton.classList.add('opacity-75');
+                
+                // Simulate payment processing
+                setTimeout(() => {
+                    showNotification('Payment successful!', 'success');
+                    updateSuccessPage();
+                    scrollToSection('success');
+                }, 2000);
+            }
+        }
+
+        function updateSuccessPage() {
+            // Update booking ID
+            const bookingIdElements = document.querySelectorAll('.booking-id');
+            bookingIdElements.forEach(el => {
+                el.textContent = appState.bookingData.bookingId;
+            });
+            
+            // Update booking details
+            const detailElements = {
+                movie: document.querySelector('.success-movie'),
+                theatre: document.querySelector('.success-theatre'),
+                datetime: document.querySelector('.success-datetime'),
+                seats: document.querySelector('.success-seats'),
+                total: document.querySelector('.success-total')
+            };
+            
+            if (detailElements.movie) detailElements.movie.textContent = appState.bookingData.movieTitle;
+            if (detailElements.theatre) detailElements.theatre.textContent = appState.bookingData.theatre;
+            if (detailElements.datetime) detailElements.datetime.textContent = `${appState.selectedDate}, ${appState.selectedShowtime}`;
+            if (detailElements.seats) {
+                const seatText = appState.selectedSeats.map(seat => seat.id).join(', ');
+                const seatType = appState.selectedSeats.length > 0 ? appState.selectedSeats[0].type : '';
+                detailElements.seats.textContent = `${seatText} (${seatType})`;
+            }
+            if (detailElements.total) detailElements.total.textContent = `₹${appState.bookingData.totalAmount}`;
+        }
+
+        // Profile functionality
+        function updateProfile() {
+            const nameInput = document.querySelector('input[value="Ashish John"]');
+            const emailInput = document.querySelector('input[value="ashish.john@email.com"]');
+            const phoneInput = document.querySelector('input[value="+91 98765 43210"]');
+            
+            if (nameInput && emailInput && phoneInput) {
+                showNotification('Profile updated successfully!', 'success');
+                animateElement(nameInput.closest('.bg-gray-50'));
+            }
+        }
+
+        function toggleNotification(toggle) {
+            const isEnabled = toggle.classList.contains('bg-red-500');
+            const toggleDot = toggle.querySelector('div');
+            
+            if (isEnabled) {
+                toggle.classList.remove('bg-red-500');
+                toggle.classList.add('bg-gray-300');
+                toggleDot.classList.remove('right-0.5');
+                toggleDot.classList.add('left-0.5');
+            } else {
+                toggle.classList.remove('bg-gray-300');
+                toggle.classList.add('bg-red-500');
+                toggleDot.classList.remove('left-0.5');
+                toggleDot.classList.add('right-0.5');
+            }
+            
+            // Determine notification type based on position
+            const toggles = Array.from(document.querySelectorAll('#profile .w-12.h-6'));
+            const index = toggles.indexOf(toggle);
+            const types = ['Email Notifications', 'SMS Notifications', 'Marketing Emails'];
+            const type = types[index] || 'Notification';
+            
+            animateElement(toggle);
+            showNotification(`${type} ${isEnabled ? 'disabled' : 'enabled'}`);
+        }
+
+        // Download and share functionality
+        function downloadTicket() {
+            showNotification('Downloading ticket...', 'info');
+            
+            // Simulate download
+            setTimeout(() => {
+                showNotification('Ticket downloaded successfully!', 'success');
+            }, 1500);
+        }
+
+        function shareBooking() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Movie Ticket Booking',
+                    text: `I just booked tickets for ${appState.bookingData.movieTitle}!`,
+                    url: window.location.href
+                });
+            } else {
+                // Fallback for browsers without Web Share API
+                navigator.clipboard.writeText(`Check out my booking: ${appState.bookingData.movieTitle} at ${appState.bookingData.theatre}`);
+                showNotification('Booking details copied to clipboard!', 'success');
+            }
+        }
+
+        function addToCalendar() {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() + (appState.selectedDate === 'Today' ? 0 : 1));
+            
+            const eventDetails = {
+                title: `Movie: ${appState.bookingData.movieTitle}`,
+                start: startDate.toISOString().split('T')[0],
+                description: `Theatre: ${appState.bookingData.theatre}\nSeats: ${appState.selectedSeats.map(s => s.id).join(', ')}`
+            };
+            
+            showNotification('Event added to calendar!', 'success');
+        }
+
+        // Intersection Observer for animations
+        function setupIntersectionObserver() {
+            const sections = document.querySelectorAll('section[id]');
+            const options = {
+                rootMargin: '-20% 0px -20% 0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        updateActiveNavDot(entry.target.id);
+                        appState.currentSection = entry.target.id;
+                        
+                        // Trigger section-specific animations
+                        const animatedElements = entry.target.querySelectorAll('.animate-on-scroll');
+                        animatedElements.forEach((el, index) => {
+                            setTimeout(() => {
+                                el.style.opacity = '1';
+                                el.style.transform = 'translateY(0)';
+                            }, index * 100);
+                        });
+                    }
+                });
+            }, options);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        }
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start timer
+            updateTimer();
+            
+            // Setup intersection observer
+            setupIntersectionObserver();
+            
+            // Initialize continue button state
+            updateContinueButton();
+            
+            // Add event listeners
+            setupEventListeners();
+            
+            // Initialize animations
+            initializeAnimations();
+            
+            showNotification('Welcome to MovieBook! 🎬', 'info');
+        });
+
+        function setupEventListeners() {
+            // Movie cards
+            document.querySelectorAll('.movie-card').forEach(card => {
+                card.addEventListener('click', () => selectMovie(card));
+            });
+            
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => filterMovies(e.target.textContent));
+            });
+            
+            // Date buttons
+            document.querySelectorAll('.date-btn').forEach(btn => {
+                btn.addEventListener('click', () => selectDate(btn));
+            });
+            
+            // Promo code
+            const promoButton = document.querySelector('.promo-apply-btn');
+            if (promoButton) {
+                promoButton.addEventListener('click', applyPromoCode);
+            }
+            
+            // Promo code input - Enter key support
+            const promoInput = document.querySelector('.promo-input');
+            if (promoInput) {
+                promoInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        applyPromoCode();
+                    }
+                });
+            }
+            
+            // Payment method selection
+            document.querySelectorAll('input[name="payment"]').forEach(input => {
+                input.addEventListener('change', (e) => selectPaymentMethod(e.target.id));
+            });
+            
+            // Payment option clicks
+            document.querySelectorAll('.payment-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const radio = option.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        selectPaymentMethod(radio.id);
+                    }
+                });
+            });
+            
+            // Pay button
+            const payButton = document.querySelector('.pay-button');
+            if (payButton) {
+                payButton.addEventListener('click', processPayment);
+            }
+            
+            // Profile update
+            const updateBtn = document.querySelector('.update-profile-btn');
+            if (updateBtn) {
+                updateBtn.addEventListener('click', updateProfile);
+            }
+            
+            // Download and share buttons
+            const downloadBtn = document.querySelector('.download-btn');
+            const shareBtn = document.querySelector('.share-btn');
+            const calendarBtn = document.querySelector('.calendar-btn');
+            
+            if (downloadBtn) downloadBtn.addEventListener('click', downloadTicket);
+            if (shareBtn) shareBtn.addEventListener('click', shareBooking);
+            if (calendarBtn) calendarBtn.addEventListener('click', addToCalendar);
+            
+            // Notification toggles in profile
+            document.querySelectorAll('#profile .w-12.h-6').forEach(toggle => {
+                toggle.addEventListener('click', () => toggleNotification(toggle));
+            });
+            
+            // Navigation dots
+            document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                const sections = ['hero', 'movies', 'movie-details', 'theatres', 'seats', 'cart', 'payment', 'success', 'profile'];
+                dot.addEventListener('click', () => scrollToSection(sections[index]));
+            });
+            
+            // Smooth scroll for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    scrollToSection(targetId);
+                });
+            });
+        }
+
+        function initializeAnimations() {
+            // Add entrance animation classes to elements
+            const animatedElements = document.querySelectorAll('.movie-card, .theatre-card, .seat, .fare-breakdown');
+            animatedElements.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.3s ease';
+                el.classList.add('animate-on-scroll');
+            });
+            
+            // Trigger initial animations for visible elements
+            setTimeout(() => {
+                const heroElements = document.querySelectorAll('#hero .animate-on-scroll');
+                heroElements.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+            }, 500);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        scrollToSection('hero');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        scrollToSection('movies');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        scrollToSection('seats');
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (appState.currentSection === 'payment') {
+                            processPayment();
+                        }
+                        break;
+                }
+            }
+        });
+
+        // Auto-save functionality
+        setInterval(() => {
+            localStorage.setItem('movieBookingState', JSON.stringify(appState));
+        }, 5000);
+
+        // Load saved state
+        const savedState = localStorage.getItem('movieBookingState');
+        if (savedState) {
+            try {
+                const parsed = JSON.parse(savedState);
+                appState = { ...appState, ...parsed };
+            } catch (e) {
+                console.log('Could not load saved state');
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97b6380a155d7f2e',t:'MTc1NzI0ODI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
